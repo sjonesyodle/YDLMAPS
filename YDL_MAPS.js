@@ -1,3 +1,5 @@
+//testing
+
 ;(function( $, window, undefined ){
 
     var
@@ -629,6 +631,8 @@
 
         GMAP : { },
 
+        GMAP_BOUNDS : { }
+
     	Util : {
 
             ajax : function ( o ) {
@@ -851,6 +855,7 @@
         //::::::::::::::::::::::::::::::::::::::::
         //:::::::::::: Location Data Modules
 
+        // :: LOAD LOC DATA
         __M({
             ns   : NS.loc_data,
             name : "LOAD",
@@ -877,6 +882,7 @@
         });
 
 
+        //:: GEO CODE LOCS DATA
         __M({
             ns   : NS.loc_data,
             name : "COORDS",
@@ -918,6 +924,8 @@
             }
         });
         
+
+        //:: INFO WINDOWS FEATURE
         __M({
             ns   : NS.loc_data,
             name : "INFO_WINDOWS",
@@ -977,7 +985,8 @@
 
         });
 
-
+		
+		//:: MARKERS FEATURE
         __M({
             ns   : NS.loc_data,
             name : "MARKERS",
@@ -1198,7 +1207,8 @@
             }
         });
 
-
+		
+		//:: LIST VIEW FEATURE
         __M({
             ns   : NS.loc_data,
             name : "LIST_VIEW",
@@ -1275,6 +1285,7 @@
         //::::::::::::::::::::::::::::::::::::::::
         //:::::::::::: Geo Search Module
         
+        //:: SEARCH FEATURE
         __M({
             ns   : NS.geo,
             name : "SEARCH",
@@ -1432,6 +1443,7 @@
         //::::::::::::::::::::::::::::::::::::::::
         //:::::::::::: Search Model Modules ( sorting )
 
+        //:: RADIUS MODEL
         __M({
 
             ns   : NS.geo,
@@ -1600,7 +1612,9 @@
             }
 
         });
+		
 
+		//:: TERRITORY MODEL
         __M({
             ns   : NS.geo,
             name : "TERRITORY",
@@ -1735,10 +1749,11 @@
             }
         });
 
-
+		
         //::::::::::::::::::::::::::::::::::::::::
         //:::::::::::: GMAPS API Modules
 
+        //:: CANVAS
         __M({
             ns   : NS.gmaps,
             name : "CANVAS",
@@ -1782,7 +1797,8 @@
             }
         });
 
-
+		
+		//:: CANVAS
         __M({
             ns   : NS.gmaps,
             name : "CONFIG",
@@ -1841,7 +1857,8 @@
             }
         });
 
-
+		
+		//:: GMAPS API
         __M({
             ns   : NS.gmaps,
             name : "API",
@@ -1881,6 +1898,8 @@
         //::::::::::::::::::::::::::::::::::::::::
         //:::::::::::: Templates Module
 
+
+        //:: API LOADER
         __M({
             ns   : NS.templates,
             name : "LOAD",
@@ -1929,6 +1948,9 @@
         });
 
     }());
+
+
+	//testing from dynamic zoom
 
 
     //  _INIT
