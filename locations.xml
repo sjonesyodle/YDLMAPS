@@ -1,240 +1,324 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<serviceAreas>
-<serviceArea id="1" name="Bark Busters Houston Northwest" address="15506 Scenic Point Court" city="Cypress" state="TX" zip="77433" phone="281-810-9517" url="http://www.barkbusters-northandwesthouston.com?jagId=509" lat="29.999952" lng="-95.736961">
-<zip code="77040"/>
-<zip code="77041"/>
-<zip code="77064"/>
-<zip code="77065"/>
-<zip code="77070"/>
-<zip code="77084"/>
-<zip code="77095"/>
-<zip code="77095"/>
-<zip code="77375"/>
-<zip code="77377"/>
-<zip code="77380"/>
-<zip code="77381"/>
-<zip code="77389"/>
-<zip code="77429"/>
-<zip code="77433"/>
-<zip code="77449"/>
-<zip code="77532"/>
-<zip code="77562"/>
-</serviceArea>
+<?xml version="1.0" encoding="UTF-8"?>
+<locations>
 
-<serviceArea id="2" name="Bark Busters Montgomery County" address="1810 Ranch Trail Court" city="Magnolia" state="TX" zip="77354" phone="936-681-9402" url="http://www.barkbusters-montgomeryco.com?jagId=509" lat="30.244272" lng="-95.561420">
-<zip code="77032"/>
-<zip code="77039"/>
-<zip code="77044"/>
-<zip code="77050"/>
-<zip code="77060"/>
-<zip code="77320"/>
-<zip code="77327"/>
-<zip code="77328"/>
-<zip code="77333"/>
-<zip code="77339"/>
-<zip code="77340"/>
-<zip code="77341"/>
-<zip code="77345"/>
-<zip code="77357"/>
-<zip code="77358"/>
-<zip code="77365"/>
-<zip code="77396"/>
-<zip code="77384"/>
-<zip code="77385"/>
-<zip code="77386"/>
-<zip code="77388"/>
-<zip code="77390"/>
-<zip code="77068"/>
-<zip code="77073"/>
-<zip code="77090"/>
-<zip code="77301"/>
-<zip code="77302"/>
-<zip code="77303"/>
-<zip code="77304"/>
-<zip code="77306"/>
-<zip code="77316"/>
-<zip code="77318"/>
-<zip code="77354"/>
-<zip code="77355"/>
-<zip code="77356"/>
-<zip code="77362"/>
-<zip code="77373"/>
-<zip code="77378"/>
-<zip code="77382"/>
-</serviceArea>
+<location id="1" 
+name="Valvoline of Bloomington, MN" 
+address="8602 Lyndale Avenue"
+city="Bloomington" state="MN" zip="55420" 
+phone="952-467-8502" 
+url="http://www.valvoline-bloomingtonmn.com?jagId=474" 
+lat="44.847208" lng="-93.289104" />
 
-<serviceArea id="3" name="Bark Busters Houston South" address="3314 Trail Hollow Drive" city="Pearland" state="TX" zip="77584" phone="281-810-9526" url="http://www.barkbusters-houstonsouth.com?jagId=509" lat="29.549016" lng="-95.422144">
-<zip code="77053"/>
-<zip code="77013"/>
-<zip code="77563"/>
-<zip code="77075"/>
-<zip code="77015"/>
-<zip code="77565"/>
-<zip code="77089"/>
-<zip code="77017"/>
-<zip code="77566"/>
-<zip code="77489"/>
-<zip code="77034"/>
-<zip code="77568"/>
-<zip code="77511"/>
-<zip code="77049"/>
-<zip code="77571"/>
-<zip code="77545"/>
-<zip code="77058"/>
-<zip code="77573"/>
-<zip code="77504"/>
-<zip code="77591"/>
-<zip code="77598"/>
-<zip code="77505"/>
-<zip code="77507"/>
-<zip code="77510"/>
-<zip code="77515"/>
-<zip code="77517"/>
-<zip code="77518"/>
-<zip code="77530"/>
-<zip code="77531"/>
-<zip code="77534"/>
-<zip code="77536"/>
-<zip code="77539"/>
-<zip code="77541"/>
-<zip code="77551"/>
-<zip code="77553"/>
-<zip code="77554"/>
-<zip code="77546"/>
-<zip code="77059"/>
-<zip code="77577"/>
-<zip code="77578"/>
-<zip code="77062"/>
-<zip code="77586"/>
-<zip code="77581"/>
-<zip code="77502"/>
-<zip code="77587"/>
-<zip code="77583"/>
-<zip code="77503"/>
-<zip code="77590"/>
-<zip code="77584"/>
-</serviceArea>
+<location id="2" 
+name="Valvoline of Fridley, MN" 
+address="5701 University Avenue NE"
+city="Fridley" state="MN" zip="55432" 
+phone="763-244-2885" 
+url="http://www.valvoline-fridleymn.com?jagId=474" 
+lat="45.071857" lng="-93.262732" />
 
-<serviceArea id="4" name="Bark Busters Sugar Land, Katy, Waller and Houston, TX" address="2447 Hodges Bend Circle" city="Sugar Land" state="TX" zip="77479" phone="281-810-9537" url="http://www.barkbusters-sugarland-katy.com?jagId=509" lat="29.593076" lng="-95.609593">
-<zip code="77445"/>
-<zip code="77506"/>
-<zip code="77406"/>
-<zip code="77450"/>
-<zip code="77407"/>
-<zip code="77423"/>
-<zip code="77441"/>
-<zip code="77447"/>
-<zip code="77454"/>
-<zip code="77459"/>
-<zip code="77466"/>
-<zip code="77469"/>
-<zip code="77471"/>
-<zip code="77476"/>
-<zip code="77478"/>
-<zip code="77479"/>
-<zip code="77481"/>
-<zip code="77484"/>
-<zip code="77485"/>
-<zip code="77487"/>
-<zip code="77493"/>
-<zip code="77494"/>
-<zip code="77496"/>
-<zip code="77498"/>
-<zip code="77003"/>
-<zip code="77004"/>
-<zip code="77011"/>
-<zip code="77012"/>
-<zip code="77021"/>
-<zip code="77023"/>
-<zip code="77029"/>
-<zip code="77033"/>
-<zip code="77036"/>
-<zip code="77048"/>
-<zip code="77051"/>
-<zip code="77061"/>
-<zip code="77074"/>
-<zip code="77087"/>
-<zip code="77204"/>
-<zip code="77207"/>
-<zip code="77221"/>
-<zip code="77223"/>
-<zip code="77229"/>
-<zip code="77233"/>
-<zip code="77236"/>
-<zip code="77237"/>
-<zip code="77251"/>
-<zip code="77261"/>
-<zip code="77262"/>
-<zip code="77274"/>
-<zip code="77288"/>
-<zip code="77363"/>
-<zip code="77404"/>
-<zip code="77414"/>
-<zip code="77415"/>
-<zip code="77417"/>
-<zip code="77418"/>
-<zip code="77420"/>
-<zip code="77422"/>
-<zip code="77430"/>
-<zip code="77431"/>
-<zip code="77432"/>
-<zip code="77434"/>
-<zip code="77435"/>
-<zip code="77436"/>
-<zip code="77437"/>
-<zip code="77443"/>
-<zip code="77444"/>
-<zip code="77415"/>
-<zip code="77446"/>
-<zip code="77448"/>
-<zip code="77451"/>
-<zip code="77452"/>
-<zip code="77453"/>
-<zip code="77454"/>
-<zip code="77461"/>
-<zip code="77463"/>
-<zip code="77464"/>
-<zip code="77467"/>
-<zip code="77468"/>
-<zip code="77473"/>
-<zip code="77474"/>
-<zip code="77480"/>
-<zip code="77482"/>
-<zip code="77486"/>
-<zip code="77488"/>
-<zip code="77546"/>
-<zip code="77547"/>
-</serviceArea>
+<location id="3" 
+name="Valvoline of St. Paul, MN" 
+address="699 Snelling Avenue N."
+city="St. Paul" state="MN" zip="55104" 
+phone="651-243-6234" 
+url="http://www.valvoline-stpaulmn.com?jagId=474" 
+lat="44.962199" lng="-93.167473" />
 
-<serviceArea id="5" name="Bark Busters Houston Central Southwest" address="16880 E Maglitto Circle" city="Tomball" state="TX" zip="77377" phone="281-810-9542" url="http://www.barkbusters-swcentralhouston.com?jagId=509" lat="30.011868" lng="-95.603717">
-<zip code="77401"/>
-<zip code="77477"/>
-<zip code="77002"/>
-<zip code="77005"/>
-<zip code="77006"/>
-<zip code="77007"/>
-<zip code="77008"/>
-<zip code="77009"/>
-<zip code="77010"/>
-<zip code="77018"/>
-<zip code="77019"/>
-<zip code="77025"/>
-<zip code="77027"/>
-<zip code="77030"/>
-<zip code="77031"/>
-<zip code="77035"/>
-<zip code="77045"/>
-<zip code="77046"/>
-<zip code="77047"/>
-<zip code="77054"/>
-<zip code="77056"/>
-<zip code="77057"/>
-<zip code="77071"/>
-<zip code="77091"/>
-<zip code="77092"/>
-<zip code="77096"/>
-<zip code="77098"/>
-<zip code="77041"/>
-</serviceArea>
+<location id="4" 
+name="Valvoline of Roseville, MN" 
+address="1925 Lexington Avenue"
+city="Roseville" state="MN" zip="55113" 
+phone="651-243-6239" 
+url="http://www.valvoline-rosevillemn.com?jagId=474" 
+lat="44.999519" lng="-93.146773" />
 
-</serviceAreas>
+<location id="5" 
+name="Valvoline of Minneapolis, MN" 
+address="2401 Hennepin Avenue S."
+city="Minneapolis" state="MN" zip="55405" 
+phone="612-293-5917" 
+url="http://www.valvoline-minneapolismn10012.com?jagId=474" 
+lat="44.959128" lng="-93.294094" />
+
+<location id="6" 
+name="Valvoline of Minneapolis, MN" 
+address="5800 Lyndale Avenue S."
+city="Minneapolis" state="MN" zip="55419" 
+phone="612-217-0924" 
+url="http://www.valvoline-minneapolismn10011.com?jagId=474" 
+lat="44.897656" lng="-93.288680" />
+
+<location id="7" 
+name="Valvoline of West St. Paul, MN" 
+address="1126 S. Robert Street"
+city="West St. Paul" state="MN" zip="55118" 
+phone="651-243-3036" 
+url="http://www.valvoline-wstpaulmn.com?jagId=474" 
+lat="44.912260" lng="-93.080431" />
+
+<location id="8" 
+name="Valvoline of Maplewood, MN" 
+address="2855 White Bear Avenue"
+city="Maplewood" state="MN" zip="55109" 
+phone="651-243-2972" 
+url="http://www.valvoline-maplewoodmn.com?jagId=474" 
+lat="45.027317" lng="-93.018521" />
+
+<location id="9" 
+name="Valvoline of Maple Grove, MN" 
+address="9400 Dunkirk Lane North"
+city="Maple Grove" state="MN" zip="55311" 
+phone="763-219-1291" 
+url="http://www.valvoline-maplegrovemn.com?jagId=474" 
+lat="45.124234" lng="-93.492157" />
+
+<location id="10" 
+name="Valvoline of Shorewood, MN" 
+address="19465 Highway 7"
+city="Shorewood" state="MN" zip="55331" 
+phone="952-373-4871" 
+url="http://www.valvoline-shorewoodmn.com?jagId=474" 
+lat="44.909653" lng="-93.526724" />
+
+<location id="11" 
+name="Valvoline of Golden Valley, MN" 
+address="8950 Hwy. 55"
+city="Golden Valley" state="MN" zip="55427" 
+phone="763-200-5927" 
+url="http://www.valvoline-goldenvalleymn.com?jagId=474" 
+lat="44.984457" lng="-93.393915" />
+
+<location id="12" 
+name="Valvoline of St. Anthony Village, MN" 
+address="3701 Silver Lake Road"
+city="St. Anthony Village " state="MN" zip="55421" 
+phone="612-293-8951" 
+url="http://www.valvoline-stanthonyvillagemn.com?jagId=474" 
+lat="45.035918" lng="-93.217921" />
+
+<location id="13" 
+name="Valvoline of Coon Rapids, MN" 
+address="25 Coon Rapids Blvd."
+city="Coon Rapids" state="MN" zip="55448" 
+phone="763-250-1928" 
+url="http://www.valvoline-coonrapidsmn.com?jagId=474" 
+lat="45.134719" lng="-93.267950" />
+
+<location id="14" 
+name="Valvoline of Eagan, MN # 10035" 
+address="1984 Rahncliffe Court"
+city="Eagan" state="MN" zip="55122" 
+phone="651-300-0088" 
+url="http://www.valvoline-eaganmn.com?jagId=474" 
+lat="44.789580" lng="-93.207022" />
+
+<location id="15" 
+name="Valvoline of Apple Valley, MN" 
+address="209 County Road 42"
+city="Apple Valley" state="MN" zip="55124" 
+phone="952-467-8505" 
+url="http://www.valvoline-applevalleymn.com?jagId=474" 
+lat="44.731952" lng="-93.238016" />
+
+<location id="16" 
+name="Valvoline of Chanhassen, MN" 
+address="335 79th St."
+city="Chanhassen" state="MN" zip="55317" 
+phone="952-467-8515" 
+url="http://www.valvoline-chanhassenmn.com?jagId=474" 
+lat="44.860322" lng="-93.529992" />
+
+<location id="17" 
+name="Valvoline of White Bear Lake, MN" 
+address="2731 County Road E"
+city="White Bear Lake" state="MN" zip="55110" 
+phone="651-347-4141" 
+url="http://www.valvoline-whitebearlakemn.com?jagId=474" 
+lat="45.050241" lng="-92.985407" />
+
+<location id="18" 
+name="Valvoline of Plymouth, MN" 
+address="11050 Highway 55, Suite 100"
+city="Plymouth" state="MN" zip="55441" 
+phone="763-200-5926" 
+url="http://www.valvoline-plymouthmn.com?jagId=474" 
+lat="44.988342" lng="-93.420698" />
+
+<location id="19" 
+name="Valvoline of Eagan, MN" 
+address="1180 Yankee Doodle Road"
+city="Eagan" state="MN" zip="55121" 
+phone="651-964-6325" 
+url="http://www.valvoline-eaganminnesota.com?jagId=474" 
+lat="44.833033" lng="-93.151268" />
+
+<location id="20" 
+name="Valvoline of Coon Rapids, MN" 
+address="3530 Northdale Blvd."
+city="Coon Rapids" state="MN" zip="55448" 
+phone="763-200-5962" 
+url="http://www.valvoline-coonrapidsmin.com?jagId=474" 
+lat="45.207263" lng="-93.355880" />
+
+<location id="21" 
+name="Valvoline of New Hope, MN" 
+address="7305 42nd Ave. N."
+city="New Hope" state="MN" zip="55427" 
+phone="763-200-1892" 
+url="http://www.valvoline-newhopemn.com?jagId=474" 
+lat="45.032535" lng="-93.373332" />
+
+<location id="22" 
+name="Valvoline of Hudson, MN" 
+address="2421 Gateway Court"
+city="Hudson" state="WI" zip="54016" 
+phone="715-802-1296" 
+url="http://www.valvoline-hudsonmn.com?jagId=474" 
+lat="44.959662" lng="-92.723060" />
+
+<location id="23" 
+name="Valvoline of Medina, MN" 
+address="215 Clydesdale Trail"
+city="Medina" state="MN" zip="55340" 
+phone="763-200-5957" 
+url="http://www.valvoline-medinamn.com?jagId=474" 
+lat="45.044469" lng="-93.527800" />
+
+<location id="24" 
+name="Valvoline of Brooklyn Park, MN" 
+address="8565 Aspen Lane N"
+city="Brooklyn Park" state="MN" zip="55445" 
+phone="763-200-5963" 
+url="http://www.valvolinebrooklynparkmn.com?jagId=474" 
+lat="45.109527" lng="-93.393843" />
+
+<location id="25" 
+name="Valvoline of Inver Grove Heights, MN" 
+address="5578 Bishop Ave."
+city="Inver Grove Heights" state="MN" zip="55076" 
+phone="651-347-4089" 
+url="http://www.valvoline-invergroveheightsmn.com?jagId=474" 
+lat="44.867712" lng="-93.056096" />
+
+<location id="26" 
+name="Valvoline of Cottage Grove, MN," 
+address="7201 80th Street S."
+city="Cottage Grove" state="MN" zip="55016" 
+phone="651-212-4475" 
+url="http://www.valvoline-cottagegrovemn.com?jagId=474" 
+lat="44.833207" lng="-92.960391" />
+
+<location id="27" 
+name="Valvoline of Forest Lake, MN" 
+address="4860 N. 228th Street"
+city="Forest Lake" state="MN" zip="55025" 
+phone="651-347-4078" 
+url="http://www.valvoline-forestlakemn.com?jagId=474" 
+lat="45.279890" lng="-93.005175" />
+
+<location id="28" 
+name="Valvoline of Rosemount, MN" 
+address="3480 150th St. W."
+city="Rosemount" state="MN" zip="55068" 
+phone="651-347-4090" 
+url="http://www.valvoline-rosemountmn.com?jagId=474" 
+lat="44.731432" lng="-93.135279" />
+
+<location id="29" 
+name="Valvoline of White Bear Township, MN" 
+address="1008 Meadowlands Dr."
+city="White Bear Township" state="MN" zip="55127" 
+phone="651-300-4617" 
+url="http://www.valvoline-whitebeartownshipmn.com?jagId=474" 
+lat="45.080014" lng="-93.060194" />
+
+<location id="30" 
+name="Valvoline of Lakeville, MN" 
+address="17505 Kenwood Trail"
+city="Lakeville" state="MN" zip="55044" 
+phone="952-467-8498" 
+url="http://www.valvoline-lakevillemn.com?jagId=474" 
+lat="44.695921" lng="-93.286757" />
+
+<location id="31" 
+name="Valvoline of Brooklyn Park, MN" 
+address="8550 Edinburgh Ctr. Dr. N."
+city="Brooklyn Park" state="MN" zip="55443" 
+phone="763-200-5984" 
+url="http://www.valvoline-brooklynparkmn.com?jagId=474" 
+lat="45.110917" lng="-93.302257" />
+
+<location id="32" 
+name="Valvoline of Woodbury, MN" 
+address="650 Commons Lane"
+city="Woodbury" state="MN" zip="55125" 
+phone="651-300-4635" 
+url="http://www.valvoline-woodburymn.com?jagId=474" 
+lat="44.939081" lng="-92.932730" />
+
+<location id="33" 
+name="Valvoline of Savage, MN" 
+address="14151 Vernon Ave."
+city="Savage" state="MN" zip="55378" 
+phone="952-467-8501" 
+url="http://www.valvoline-savagemn.com?jagId=474" 
+lat="44.749452" lng="-93.351351" />
+
+<location id="34" 
+name="Valvoline of Chaska, MN" 
+address="1380 Crystal Lane"
+city="Chaska" state="MN" zip="55318" 
+phone="952-467-8512" 
+url="http://www.valvoline-chaskamn.com?jagId=474" 
+lat="44.801211" lng="-93.579202" />
+
+<location id="35" 
+name="Valvoline of Elk River, MN" 
+address="19395 Evans Street NW"
+city="Elk River" state="MN" zip="55330" 
+phone="763-220-2758" 
+url="http://www.valvoline-elkrivermn.com?jagId=474" 
+lat="45.322441" lng="-93.560619" />
+
+<location id="36" 
+name="Valvoline of Oak Park Heights, MN" 
+address="5800 Neal Avenue N"
+city="Oak Park Heights" state="MN" zip="55082" 
+phone="651-300-0092" 
+url="http://www.valvoline-oakparkheightsmn.com?jagId=474" 
+lat="45.032441" lng="-92.849831" />
+
+<location id="37" 
+name="Valvoline of Anoka, MN" 
+address="2902  Cutters Grove Ave."
+city="Anoka" state="MN" zip="55303" 
+phone="763-220-2772" 
+url="http://www.valvoline-anokamn.com?jagId=474" 
+lat="45.211204" lng="-93.411984" />
+
+<location id="38" 
+name="Valvoline of Blaine, MN" 
+address="12805 Central Ave. NE"
+city="Blaine" state="MN" zip="55434" 
+phone="763-200-1907" 
+url="http://www.valvoline-blainemn.com?jagId=474" 
+lat="45.202548" lng="-93.233134" />
+
+<location id="39" 
+name="Valvoline of Rogers, MN" 
+address="13651 Northdale Blvd."
+city="Rogers" state="MN" zip="55374" 
+phone="763-250-1620" 
+url="http://www.valvoline-rogersmn.com?jagId=474" 
+lat="45.202838" lng="-93.554411" />
+
+<location id="40" 
+name="Valvoline of Buffalo, MN AV-2508" 
+address="802 First Street NE"
+city="Buffalo" state="MN" zip="55313" 
+phone="763-250-1627" 
+url="http://www.valvoline-buffalomn.com?jagId=474" 
+lat="45.172774" lng="-93.865273" />
+
+</locations>

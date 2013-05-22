@@ -1,5 +1,3 @@
-//testing
-
 ;(function( $, window, undefined ){
 
     var
@@ -631,7 +629,7 @@
 
         GMAP : { },
 
-        GMAP_BOUNDS : { }
+        GMAP_BOUNDS : { },
 
     	Util : {
 
@@ -818,7 +816,8 @@
             "loc_data",
             "geo",
             "gmaps",
-            "templates"
+            "templates",
+            "features"
         ]),
 
         //::::::::::::::::::
@@ -923,7 +922,50 @@
                 }
             }
         });
+
+
+		
+		//::::::::::::::::::::::::::::::::::::::::
+        //:::::::::::: UI FEATURES
         
+        __M({
+        	ns : NS.features,
+        	name : "DYNAMIC_ZOOM",
+        	use : true,
+
+        	config : {
+
+        	},
+
+        	module : {
+
+        		init : function () {
+        			this.hub.listen( MSGS.markers_loaded, this.updateZoom );
+        			this.hub.listen( MSGS.loc_data_sorted, this.updateZoom );
+        		},
+
+        		updateZoom : function ( hideFlag ) {
+        			var
+        			bounds  = new google.maps.LatLngBounds(),
+        			locData = Kernel.LOC_DATA,
+        			i, len;
+
+        			i   = 0;
+        			len = locData.length;
+        			for ( ; i < len; i += 1 ) {
+        				if ( !locData[i][ hideFlag ] ) {
+        					bounds.extend( locData[i].marker.getPosition() );
+        				}
+        			}
+
+        			Kernel.GMAP.fitBounds( bounds );	
+
+        		}
+
+        	}
+
+        });
+
 
         //:: INFO WINDOWS FEATURE
         __M({
@@ -995,7 +1037,7 @@
             
             //:::::::::::::::::::::::::
             config : {
-                use : "DEFAULT",
+                use : "HEX",
 
                 //.....
                 HEX : {
@@ -1005,7 +1047,7 @@
 
                 //.....
                 IMG : {
-                    path : "http://www.valvolineofflagstaff.com/images/map-icon.png"
+                    path : ""
                 },
 
                 DEFAULT : {}
@@ -1027,6 +1069,7 @@
                         self.onloadMarkers = bool;
 
                         self.util().build();
+
                     }); 
                     
                     self.hub.listen( MSGS.loc_data_sorted , function( hideFlag ) {
@@ -1048,8 +1091,12 @@
 
                         DEFAULT : {
                             async : false,
-                            algo : function () {
-                                return new google.maps.Marker( this.markerConfig );
+                            algo : function ( isUser ) {
+                            	var marker = new google.maps.Marker( this.markerConfig );
+
+                            	if ( isUser ) marker.setZIndex( google.maps.Marker.MAX_ZINDEX );
+
+                                return marker;
                             }
                         },
 
@@ -1135,16 +1182,17 @@
 
                     if ( K.USER_COORDS_MARKER ) K.USER_COORDS_MARKER.setMap( null );
 
-                    GMAP.setCenter( USER_COORDS );
-
                     K.USER_COORDS_MARKER = {
                         markerConfig : {
                             map : GMAP,
-                            position : USER_COORDS
+                            position : USER_COORDS,
+                            icon : "#123456"
                         }
                     };
 
-                    K.USER_COORDS_MARKER = this.algos.DEFAULT.algo.call( K.USER_COORDS_MARKER );
+                    K.USER_COORDS_MARKER = this.algos.DEFAULT.algo.call( K.USER_COORDS_MARKER, true );
+
+                    return self;
                 },  
 
                 util : function () {
@@ -1167,16 +1215,6 @@
                     //....
                     this.util = __;
                     return this;
-                },
-
-                complete : function () {
-                    var self = this;
-
-                    google.maps.event.addListener(K.GMAP, "idle", function() {
-                        self.hub.broadcast( MSGS.viewport_changed );
-                    });
-
-                    this.hub.broadcast( MSGS.markers_loaded );
                 },
 
                 updateMarkers : function () {
@@ -1202,6 +1240,10 @@
                     }
 
                     return self;
+                },
+
+                complete : function () {
+                    this.hub.broadcast( MSGS.markers_loaded );
                 }
 
             }
@@ -1753,6 +1795,7 @@
         //::::::::::::::::::::::::::::::::::::::::
         //:::::::::::: GMAPS API Modules
 
+
         //:: CANVAS
         __M({
             ns   : NS.gmaps,
@@ -1948,9 +1991,6 @@
         });
 
     }());
-
-
-	//testing from dynamic zoom
 
 
     //  _INIT
