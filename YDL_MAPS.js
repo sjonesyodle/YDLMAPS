@@ -527,10 +527,10 @@
         };
 
     }()),
-    trim = $.trim;
+    trim = $.trim,
+    K = Kernel, __M, __C, appify;
 
-
-    Kernel.extend(Kernel, {
+    K.extend(K, {
 
         Builder : {
 
@@ -565,14 +565,14 @@
 
                 o.module.config = o.config || {};
 
-                Kernel.Builder.modules[ name ] = o;
+                K.Builder.modules[ name ] = o;
             },
 
             start : function () {
                 var
-                modules = Kernel.Builder.modules,
+                modules = K.Builder.modules,
                 registerMods = [],
-                define = Kernel.module.define,
+                define = K.module.define,
                 prop;
 
                 for ( prop in modules ) {
@@ -582,9 +582,24 @@
                     }
                 }
 
-                Kernel.register( registerMods );
-                Kernel.startAll();
-                delete Kernel.Builder;
+                K.register( registerMods );
+                K.startAll();
+                delete K.Builder;
+            },
+
+            appify : function ( prefix, arr ) {
+                var prop, i, l, ret = {};
+
+                prefix = trim( prefix );
+
+                i = 0;
+                l = arr.length;
+                for ( ; i < l; i += 1 ) {
+                	arr[i] = trim( arr[i] );
+                	ret[ arr[i] ] = prefix + "_" + arr[i];
+                }
+
+                return ret;
             } 
         },
 
@@ -595,19 +610,19 @@
         TEMPLATES : { },
 
         mapModel : function () {
-            var locData = Kernel.LOC_DATA;
+            var locData = K.LOC_DATA;
 
             if ( !locData || $.isEmptyObject( locData  ) ) return;
 
             // radius model
             if ( locData.locations && locData.locations.location ) {
-                Kernel.LOC_DATA = locData.locations.location;
+                K.LOC_DATA = locData.locations.location;
                 return;
             }
 
             // territory model
             if ( locData.serviceAreas && locData.serviceAreas.serviceArea ) {
-                Kernel.LOC_DATA = locData.serviceAreas.serviceArea;
+                K.LOC_DATA = locData.serviceAreas.serviceArea;
                 return;
             }
         },
@@ -766,55 +781,72 @@
             checkZip : function ( val ) {
                 var rgx = /^\d{5}([\-]\d{4})?$/;
                 return rgx.test( trim(val) );
-            }
+            },
 
+            validate : (function(){
+                var lib = {
+                    email : /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i,
+                    zip : /^\d{5}([\-]\d{4})?$/
+                };
+
+
+                return function ( val, regex ) {
+                    return lib.hasOwnProperty(trim(regex)) ? lib[regex].test(val) : false;
+                };  
+            }())
     	}
 
     });
 
-    ;(function(){
-    	var 
-        __M = Kernel.Builder.defineMod,
-        __C = Kernel.Builder.addModConfig,
+	__M = K.Builder.defineMod;
+    __C = K.Builder.addModConfig;
+	appify = K.Builder.appify;
 
+
+    ;(function(){
+    	var APP, NS, MSGS;
+
+    	APP = "YDL_MAPS";
 
         //::::::::::::::::::
         //:::::: NAMESPACES
-        NS = {
-            loc_data : "LOC_DATA",
-            geo      : "SEARCH",
-            gmaps    : "GMAPS",
-            templates : "TEMPLATES"
-        },
+        NS = appify(APP, [
+            "loc_data",
+            "geo",
+            "gmaps",
+            "templates"
+        ]),
 
         //::::::::::::::::::
         //:::::: MESSAGES
-        MSGS = {
-            gmap_api_loaded    : "gmaps-api-loaded",
-            gmap_config_ready  : "gmaps-config-ready",
-            gmap_dom_ready     : "gmaps-dom-loaded",
+        MSGS = appify(APP, [
+            "gmap_api_loaded",
+            "gmap_config_ready",
+            "gmap_dom_ready",
 
-            loc_data_ready     : "location-data-ready",
-            loc_coords_ready   : "location-coords-ready",
+            "loc_data_ready",
+            "loc_coords_ready",
 
-            new_user_search    : "new-user-search",
-            user_search_update : "user-search-update",
-            user_search_request : "user-search-request",
-            loc_data_sorted    : "location-data-sorted",
-            docready_loclist   : "load_loclist_docready",
+            "new_user_search",
+            "user_search_update",
+            "user_search_request",
+            "loc_data_sorted",
+            "docready_loclist",
 
-            search_model_ready : "search-model-ready",
-            user_search_response : "user-search-response",
+            "search_model_ready",
+            "user_search_response",
 
-            markers_loaded     : "markers-loaded",
-            docready_markers   : "load_markers_docready",
+            "markers_loaded",
+            "docready_markers",
 
-            load_info_windows  : "load-info-windows",
+            "load_info_windows",
 
-            viewport_changed   : "viewport-changed",
+            "viewport_changed",
 
-            templates_loaded    : "templates-loaded"
-        };
+            "templates_loaded"
+        ]);
+
+
 
         //::::::::::::::::::::::::::::::::::::::::
         //:::::::::::: Location Data Modules
@@ -837,8 +869,8 @@
                 },
 
                 load : function () {
-                    Kernel.LOC_DATA = Kernel.Util.xml2json( this.config.file ).json;
-                    Kernel.mapModel();
+                    K.LOC_DATA = K.Util.xml2json( this.config.file ).json;
+                    K.mapModel();
                 }
 
             }
@@ -869,7 +901,7 @@
 
                 addCoords : function () {
                     var 
-                    locData = Kernel.LOC_DATA, self = this,
+                    locData = K.LOC_DATA, self = this,
                     i, len, lat, lng;
 
                     i   = 0;
@@ -907,7 +939,7 @@
 
                     self.hub.listen( MSGS.markers_loaded, function () {
                         self.GMAPInfoWindow = new google.maps.InfoWindow();
-                        self.template = Kernel.TEMPLATES[ trim(self.config.tmplNodeId) ];
+                        self.template = K.TEMPLATES[ trim(self.config.tmplNodeId) ];
                         if ( !self.template ) return;
                         self.buildInfoWindowViews();
 
@@ -918,7 +950,7 @@
                     var
                     self = this,
                     template  = _.template( self.template ),
-                    LOC_DATA = Kernel.LOC_DATA,
+                    LOC_DATA = K.LOC_DATA,
                     i, len;
 
                     i   = 0;
@@ -938,7 +970,7 @@
 
                     google.maps.event.addListener(o.marker, self.config.userEvent, function() {
                         self.GMAPInfoWindow.setContent( o.infoWindow );
-                        self.GMAPInfoWindow.open( Kernel.GMAP, o.marker);
+                        self.GMAPInfoWindow.open( K.GMAP, o.marker);
                     });
                 }
             }
@@ -1014,7 +1046,7 @@
 
                         HEX : {
                             async : function( o ) {
-                                Kernel.Util.loadScript( o.lib, o.cb );
+                                K.Util.loadScript( o.lib, o.cb );
                             },
                             algo : function () {
                                 var 
@@ -1068,7 +1100,7 @@
                     prop, i, len, 
                     markerConfig, locData;
 
-                    locData = Kernel.LOC_DATA;
+                    locData = K.LOC_DATA;
 
                     i   = 0;
                     len = locData.length;
@@ -1089,21 +1121,21 @@
                 loadUserMarker : function () {
                     var 
                     self = this,
-                    GMAP = Kernel.GMAP,
-                    USER_COORDS = Kernel.USER_COORDS;
+                    GMAP = K.GMAP,
+                    USER_COORDS = K.USER_COORDS;
 
-                    if ( Kernel.USER_COORDS_MARKER ) Kernel.USER_COORDS_MARKER.setMap( null );
+                    if ( K.USER_COORDS_MARKER ) K.USER_COORDS_MARKER.setMap( null );
 
                     GMAP.setCenter( USER_COORDS );
 
-                    Kernel.USER_COORDS_MARKER = {
+                    K.USER_COORDS_MARKER = {
                         markerConfig : {
                             map : GMAP,
                             position : USER_COORDS
                         }
                     };
 
-                    Kernel.USER_COORDS_MARKER = this.algos.DEFAULT.algo.call( Kernel.USER_COORDS_MARKER );
+                    K.USER_COORDS_MARKER = this.algos.DEFAULT.algo.call( K.USER_COORDS_MARKER );
                 },  
 
                 util : function () {
@@ -1114,11 +1146,11 @@
                         getMarkerConfig : function ( locData ) {
                             var config = {};
 
-                            if ( !Kernel.GMAP || !locData.GLatLng ) return; 
+                            if ( !K.GMAP || !locData.GLatLng ) return; 
 
                             return {
                                 position : locData.GLatLng,
-                                map      : Kernel.GMAP
+                                map      : K.GMAP
                             };
                         }
                     };
@@ -1131,7 +1163,7 @@
                 complete : function () {
                     var self = this;
 
-                    google.maps.event.addListener(Kernel.GMAP, "idle", function() {
+                    google.maps.event.addListener(K.GMAP, "idle", function() {
                         self.hub.broadcast( MSGS.viewport_changed );
                     });
 
@@ -1145,7 +1177,7 @@
                     i, len, hideFlag;
 
                     hideFlag = trim( self.hideFlag );
-                    locObj   = Kernel.LOC_DATA;
+                    locObj   = K.LOC_DATA;
 
                     i   = 0;
                     len = locObj.length;
@@ -1157,7 +1189,7 @@
                             continue;
                         }
 
-                        currObj.marker.setMap( Kernel.GMAP );
+                        currObj.marker.setMap( K.GMAP );
                     }
 
                     return self;
@@ -1189,12 +1221,12 @@
                     
                     self.hub.listen( MSGS.templates_loaded, function(){
 
-                        self.template = Kernel.TEMPLATES[ self.config.tmplNodeId ];
+                        self.template = K.TEMPLATES[ self.config.tmplNodeId ];
                         if ( !self.template ) return;
                         
                         self.config.listRootNode = $( self.config.listRootNode );
 
-                        if ( !Kernel.Util.isNode( self.config.listRootNode ) ) return;
+                        if ( !K.Util.isNode( self.config.listRootNode ) ) return;
                         
                         if ( !self.config.loadListOnload ) return;
 
@@ -1214,7 +1246,7 @@
                     var
                     self = this,
                     template  = _.template( self.template ),
-                    LOC_DATA = Kernel.LOC_DATA,
+                    LOC_DATA = K.LOC_DATA,
                     i, len;
 
                     self.fullListView = "";
@@ -1285,7 +1317,7 @@
                     var
                     self   = this,
                     nodes  = self.config.nodes,
-                    isNode = Kernel.Util.isNode,
+                    isNode = K.Util.isNode,
                     events = self.events,
                     prop;
 
@@ -1447,7 +1479,7 @@
                 },
 
                 build : function () {
-                    if ( typeof Kernel.USER_COORDS !== "object" ) return;
+                    if ( typeof K.USER_COORDS !== "object" ) return;
 
                     this.config.boundary = parseInt(this.config.boundary, 10);
 
@@ -1460,7 +1492,7 @@
                 },
 
                 doUpdate : function ( userCoords ) {
-                    Kernel.USER_COORDS = userCoords;
+                    K.USER_COORDS = userCoords;
                     this.build();
                 },
 
@@ -1488,7 +1520,7 @@
                 flagOutOfBoundsLocs : function () {
                     var 
                     self = this,
-                    locData = Kernel.LOC_DATA,
+                    locData = K.LOC_DATA,
                     i, len, currLoc;
 
                     self.hiddenLocs = 0;
@@ -1507,15 +1539,15 @@
                 },
 
                 sortLocs : function () {
-                    Kernel.LOC_DATA.sort( Kernel.Util.sortNum( this.config.distanceKey ) );
+                    K.LOC_DATA.sort( K.Util.sortNum( this.config.distanceKey ) );
                     return this;
                 },
 
                 computeDistances : function () {
                     var
                     self        = this,
-                    locData     = Kernel.LOC_DATA,
-                    userCoords  = Kernel.USER_COORDS, 
+                    locData     = K.LOC_DATA,
+                    userCoords  = K.USER_COORDS, 
 
                     i, len, currLoc, haversineObj;
 
@@ -1539,7 +1571,7 @@
                             lng : currLoc._lng
                         };
 
-                        currLoc[ self.config.distanceKey ] = Kernel.Util.haversine( haversineObj ).toFixed(2);
+                        currLoc[ self.config.distanceKey ] = K.Util.haversine( haversineObj ).toFixed(2);
                     }
 
                     return self;
@@ -1548,7 +1580,7 @@
                 locsFound : function () {
                     var self = this;
 
-                    if ( self.hiddenLocs === Kernel.LOC_DATA.length ) {
+                    if ( self.hiddenLocs === K.LOC_DATA.length ) {
                         self.triggerError( self.config.messages.noResults ); 
                     }
 
@@ -1631,7 +1663,7 @@
                 checkTerritory : function () {
                     var
                     self = this,
-                    LOC_DATA = Kernel.LOC_DATA,
+                    LOC_DATA = K.LOC_DATA,
                     i, len, currLoc,
 
                     zipMatch = function ( zipObjArr ) {
@@ -1661,7 +1693,7 @@
                 },
 
                 checkZip : function () {
-                    return Kernel.Util.checkZip( this.userZip );
+                    return K.Util.checkZip( this.userZip );
                 },
 
                 geoCodeSearch : function ( cb ) {
@@ -1675,7 +1707,7 @@
                         }
 
                         geoData = results[0].geometry.location;
-                        Kernel.USER_COORDS = new google.maps.LatLng(geoData.lat(), geoData.lng());
+                        K.USER_COORDS = new google.maps.LatLng(geoData.lat(), geoData.lng());
 
                         if ( typeof cb === "function" ) cb();
                     });
@@ -1684,7 +1716,7 @@
                 locFound : function () {
                     var self = this;
 
-                    if ( self.hiddenLocs === Kernel.LOC_DATA.length ) {
+                    if ( self.hiddenLocs === K.LOC_DATA.length ) {
                         self.triggerError( self.config.messages.noResults ); 
                     }
 
@@ -1726,7 +1758,7 @@
 
                     self.hub.listen( MSGS.gmap_config_ready, function( config ){
                         self.build( config );
-                        self.hub.broadcast( MSGS.gmap_dom_ready, Kernel.GMAP);
+                        self.hub.broadcast( MSGS.gmap_dom_ready, K.GMAP);
                     });
                     
                 },
@@ -1735,7 +1767,7 @@
                     var node;
 
                     node = $( this.config.mapNode );
-                    if ( !Kernel.Util.isNode( node ) ) return false;
+                    if ( !K.Util.isNode( node ) ) return false;
 
                     this.config.mapNode = node[0];
                     this.mapConfig      = config; 
@@ -1743,8 +1775,8 @@
                 },
 
                 loadMap : function () {
-                    Kernel.GMAP = new google.maps.Map( this.config.mapNode, this.mapConfig );
-                    return Kernel.GMAP;
+                    K.GMAP = new google.maps.Map( this.config.mapNode, this.mapConfig );
+                    return K.GMAP;
                 }
 
             }
@@ -1833,9 +1865,9 @@
                 },
 
                 load : function () {
-                    var file = Kernel.Util.add_QS_Params( this.config.file, this.config.params );
+                    var file = K.Util.add_QS_Params( this.config.file, this.config.params );
 
-                    Kernel.Util.loadScript( file );
+                    K.Util.loadScript( file );
                 },
 
                 complete : function () {
@@ -1869,7 +1901,7 @@
                 load : function () {
                     var self = this;
 
-                    Kernel.Util.ajax({
+                    K.Util.ajax({
                     	type : "GET",
                         url : trim( self.config.file ),
                         success : self.prepare
@@ -1888,7 +1920,7 @@
                         tmplId  = trim( $this.attr("id") ),
                         tmplTxt = trim( $this.html() );
 
-                        Kernel.TEMPLATES[ tmplId ] = tmplTxt.replace(/\>[\r\n|\n|\n\t ]+\</g, "><");
+                        K.TEMPLATES[ tmplId ] = tmplTxt.replace(/\>[\r\n|\n|\n\t ]+\</g, "><");
                     });
 
                     self.hub.broadcast( MSGS.templates_loaded );
@@ -1896,11 +1928,10 @@
             }
         });
 
-
     }());
 
 
     //  _INIT
-    $( Kernel.Builder.start );
+    $( K.Builder.start );
 
 }( jQuery, window ));

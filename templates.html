@@ -1,0 +1,32 @@
+<script id="locationList" type="text/template">
+
+    <div class='location'>
+        <h3>{{ data._name || "" }}</h3>
+        <p>
+            <span>{{ data._address || "" }}</span><br />
+            <span>{{ data._city || "" }}, </span>
+            <span>{{ data._state || "" }}, </span>
+            <span>{{ data._zip || "" }}</span><br />
+            <span>{{ data._phone || "" }}</span><br />
+            <span>{{ data.distance ? "Distance : " + data.distance + " miles" : "" }}</span>
+        </p>
+    </div>
+
+</script>
+
+
+
+<script id="infoWindows" type="text/template">
+
+	<div style='background:#efefef; border-radius:5px; padding:4px;color: #666'>
+        <span style='font-weight:bold'>{{ data._name || "" }}</span><br />
+        <p>
+            <span>{{ data._address || "" }}</span><br />
+            <span>{{ data._city || "" }}, </span>
+            <span>{{ data._state || "" }}, </span>
+            <span>{{ data._zip || "" }}</span><br />
+            <span>{{ data._phone || "" }}</span>
+        </p>
+    </div>
+
+</script>
