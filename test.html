@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+
+
+<style>
+    
+    .mapCanvas {
+
+        width : 400px;
+        height : 300px;
+    }
+
+</style>
+</head>
+<body>
+
+<label for="">Search</label>
+<input type="text" class="searchInput" />
+<a class="searchBtn" href="#">Search</a>
+
+<div class="mapCanvas"></div>
+
+<div id="locationList"></div>
+
+
+<script>
+	// base layout variables
+	window.ydlMapConfig = {};
+
+	// integer
+	ydlMapConfig.lat = 29.999952; 
+	ydlMapConfig.lng = -95.736961;
+
+	// integer
+	ydlMapConfig.zoom = 8;
+
+	// boolean
+	ydlMapConfig.model = {
+		RADIUS    : true,
+		TERRITORY : false
+	};
+
+</script>
+	
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="YDL_MAPS.js"></script>
+</body>
+</html>
