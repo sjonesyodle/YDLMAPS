@@ -812,9 +812,7 @@
 
     	Bank : (function(){
     		var 
-    		bank = {
-
-    		};
+    		bank = {};
 
     		return {
 
@@ -1111,10 +1109,7 @@
             		this.buildMap();
             		this.userMarker();
             		this.locMarkers();
-
-            		console.log( this.config.markers );
-
-            		// this.complete();
+            		this.complete();
             	},
 
             	buildMap : function () {
@@ -1211,7 +1206,7 @@
             	},
 
             	complete : function () {
-            		Kernel.Bank.Add( this.id, "marker_styles", this.config.markers );
+                   	Kernel.Bank.add( this.id, "marker_styles", this.config.markers );
             	}
 
             }
@@ -1221,7 +1216,7 @@
 
 		__M({
 			ns   : NS.loc_data,
-            name : "MARKER_BUILD",
+            name : "MARKER_BUILDER",
             use  : false,
 
 
