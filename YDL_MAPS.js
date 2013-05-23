@@ -1079,9 +1079,7 @@
             				txtclr : "FFFFFF"
             			},
 
-            			img : "someusermarker.png",
-
-            			def   : "|D96666" 
+            			img : "someusermarker.png"
             		},
 
             		locs : {
@@ -1098,14 +1096,11 @@
             			sorting  : {
             				alpha : true,
             				numeric : false
-            			},
-
-            			def   : "|5585D9"  
+            			}
             		}
             	},
 
             	styleKey   : "{{style}}",
-            	IMG_MARKER : "http://maps.google.com/mapfiles/ms/icons/{{style}}.png",
             	HEX_MARKER : "https://chart.googleapis.com/chart?chst=d_map_pin_letter&chld={{style}}"
 
             },
@@ -1113,15 +1108,22 @@
             module : {
 
             	init : function () {
+            		this.buildMap();
             		this.userMarker();
             		this.locMarkers();
-            		this.complete();
+
+            		console.log( this.config.markers );
+
+            		// this.complete();
             	},
 
-            	buildMap : {
-            		hex : this.buildHex,
-            		img : this.buildImg,
-            		def : this.buildHex
+            	buildMap : function () {
+            		var self = this;
+            		self.buildMap = {
+	            		hex : self.buildHex,
+	            		img : self.buildImg,
+	            		def : self.buildHex
+            		};
             	},
 
             	userMarker : function () {
@@ -1135,6 +1137,8 @@
             		}
 
             		cfg = this.buildMap[ trim( cfg.use ) ]( cfg );
+
+            		this.config.markers.user = cfg;
             	},
 
             	locMarkers : function () {
@@ -1174,38 +1178,36 @@
 
             		//def
             		if ( !cfg.use || !cfg.hasOwnProperty( cfg.use ) ) {
-            			cfg = this.buildMap["def"]( cfg );
+            			this.config.markers.locs = this.buildMap["def"]( cfg );
             			return;
             		}
 
             		//img
             		if ( cfg.use === "img" ) {
-            			cfg = this.buildMap[ cfg.use ]( cfg );
+            			this.config.markers.locs = this.buildMap[ cfg.use ]( cfg );
             			return;
             		}	
 
             		// return sort method
             		cfg.sorting = Kernel.Util.hasBoolProp( cfg.sorting, true, true );
             		if ( cfg.sorting && sortFuncs.hasOwnProperty( cfg.sorting ) ) {
-            			cfg = sortFuncs[ cfg.sorting ];
+            			this.config.markers.locs = sortFuncs[ cfg.sorting ];
             			return;
             		}
 
             		//basic hex
-            		cfg = this.buildMap[ trim( cfg.use ) ]( cfg );
+            		this.config.markers.locs = this.buildMap[ trim( cfg.use ) ]( cfg );
             		return;
             	},
 
             	buildHex : function ( cfg, sortChar ) {
             		var style;
-
-            		style = ( !!sortChar ? trim(sortChar)+"|" : "|" ) + trim( cfg.bgclr.toUpperCase() ) +"|"+ trim( cfg.txtclr.toUpperCase() );
-
+            		style = ( !!sortChar ? trim(sortChar)+"|" : "|" ) + trim( cfg.hex.bgclr.toUpperCase() ) +"|"+ trim( cfg.hex.txtclr.toUpperCase() );
             		return this.config.HEX_MARKER.replace( this.config.styleKey, style );
             	},
 
             	buildImg : function ( cfg ) {
-            		return this.config.IMG_MARKER.replace( this.config.styleKey, trim( cfg.img ) )
+            		return trim( cfg.img );
             	},
 
             	complete : function () {
@@ -1213,7 +1215,6 @@
             	}
 
             }
-
 
 		});
 
