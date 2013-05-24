@@ -1312,6 +1312,10 @@
                		len = locData.length;
                		for ( ; i < len; i += 1 ) {
                			locData[i][ markerKey ] = this.makeGMarker( locData[i] );
+
+               			if ( !this.onloadMarkers ) {
+               				locData[i][ markerKey ].setMap( null );
+               			}
                		}
                 },
 
