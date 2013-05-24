@@ -1109,7 +1109,7 @@
 
             			sorting  : {
             				alpha : false,
-            				numeric : true
+            				numeric : false
             			}
             		}
             	},
@@ -1143,7 +1143,7 @@
             		cfg = this.config.markers.user;
 
             		if ( !cfg.use || !cfg.hasOwnProperty( cfg.use ) ) {
-            			cfg = this.buildMap["def"]( cfg );
+            			this.config.markers.user = this.buildMap["def"]( cfg );
             			return;
             		}
 
@@ -1245,7 +1245,9 @@
             	},
 
             	markerKey : "marker",
-            	iconKey   : "icon" 
+            	iconKey   : "icon",
+
+            	userMarkerZ : false 
 
             },
 
@@ -1267,6 +1269,7 @@
 
                         self.hideFlag = hideFlag;
 
+                        self.buildLocPins();
                         self.updateMarkers();
                         self.loadUserMarker();
                     });
@@ -1340,6 +1343,7 @@
                             continue;
                         }
 
+                        currObj[markerKey].setIcon( currObj[ this.config.iconKey ] );
                         currObj[markerKey].setMap( K.GMAP );
                     }
 
@@ -1353,8 +1357,6 @@
 
                     if ( K.USER_COORDS_MARKER ) K.USER_COORDS_MARKER.setMap( null );
 
-                    console.log( this.marker_styles.user );
-
                     K.USER_COORDS_MARKER = {
                         map      : GMAP,
                         position : USER_COORDS      
@@ -1363,6 +1365,10 @@
                     K.USER_COORDS_MARKER[ this.config.iconKey ] = this.marker_styles.user;
 
                     K.USER_COORDS_MARKER = this.makeGMarker( K.USER_COORDS_MARKER );
+
+                    if ( this.config.userMarkerZ ) {
+                    	K.USER_COORDS_MARKER.setZIndex( google.maps.Marker.MAX_ZINDEX );
+                    }
 
                     return self;
                 },
