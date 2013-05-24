@@ -1089,11 +1089,11 @@
             			use : "hex",
 
             			hex : {
-            				bgclr  : "D96666",
-            				txtclr : "FFFFFF"
+            				bgclr  : "000000",
+            				txtclr : "000000"
             			},
 
-            			img : "someusermarker.png"
+            			img : "http://www.valvolineofflagstaff.com/images/map-icon.png"
             		},
 
             		locs : {
@@ -1108,8 +1108,8 @@
             			img : "http://www.valvolineofflagstaff.com/images/map-icon.png", 
 
             			sorting  : {
-            				alpha : true,
-            				numeric : false
+            				alpha : false,
+            				numeric : true
             			}
             		}
             	},
@@ -1263,14 +1263,13 @@
                         self.complete();
                     }); 
                     
-                    // self.hub.listen( MSGS.loc_data_sorted , function( hideFlag ) {
+                    self.hub.listen( MSGS.loc_data_sorted , function( hideFlag ) {
 
-                    //     self.hideFlag = hideFlag;
+                        self.hideFlag = hideFlag;
 
-                    //     self
-                    //     .updateMarkers()
-                    //     .loadUserMarker();
-                    // });
+                        self.updateMarkers();
+                        self.loadUserMarker();
+                    });
 
             	},
 
@@ -1313,11 +1312,11 @@
                		}
                 },
 
-                makeGMarker : function ( locObj ) {
+                makeGMarker : function ( o ) {
                 	return new google.maps.Marker({
                 		map       : K.GMAP,
-                		position  : locObj.GLatLng,
-                		icon      : locObj[ this.config.iconKey ]
+                		position  : o.GLatLng || o.position,
+                		icon      : o[ this.config.iconKey ]
                 	});
                 },
 
@@ -1325,7 +1324,8 @@
                     var
                     self = this, 
                     locObj, currObj,
-                    i, len, hideFlag;
+                    i, len, hideFlag,
+                    markerKey =  this.config.markerKey;
 
                     hideFlag = trim( self.hideFlag );
                     locObj   = K.LOC_DATA;
@@ -1336,11 +1336,11 @@
                         currObj = locObj[i];
 
                         if ( currObj[ hideFlag ] ) {
-                            currObj.marker.setMap( null );
+                            currObj[markerKey].setMap( null );
                             continue;
                         }
 
-                        currObj.marker.setMap( K.GMAP );
+                        currObj[markerKey].setMap( K.GMAP );
                     }
 
                     return self;
@@ -1348,21 +1348,21 @@
 
                 loadUserMarker : function () {
                     var 
-                    self = this,
                     GMAP = K.GMAP,
                     USER_COORDS = K.USER_COORDS;
 
                     if ( K.USER_COORDS_MARKER ) K.USER_COORDS_MARKER.setMap( null );
 
+                    console.log( this.marker_styles.user );
+
                     K.USER_COORDS_MARKER = {
-                        markerConfig : {
-                            map : GMAP,
-                            position : USER_COORDS,
-                            icon : "#123456"
-                        }
+                        map      : GMAP,
+                        position : USER_COORDS      
                     };
 
-                    K.USER_COORDS_MARKER = this.algos.DEFAULT.algo.call( K.USER_COORDS_MARKER, true );
+                    K.USER_COORDS_MARKER[ this.config.iconKey ] = this.marker_styles.user;
+
+                    K.USER_COORDS_MARKER = this.makeGMarker( K.USER_COORDS_MARKER );
 
                     return self;
                 },
