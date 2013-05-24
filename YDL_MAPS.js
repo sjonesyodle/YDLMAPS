@@ -826,7 +826,21 @@
 
     			get : function ( modID, k ) {
     				return bank[ modID ] ? bank[ modID ][ k ] : undefined;
-    			}
+    			},
+
+    			load : function ( obj, context ) {
+    				var prop, modID, bankProp;
+
+    				for ( prop in obj ) {
+    					modID    = trim( obj[prop] );	
+    					bankProp = trim( prop ); 
+
+    					if ( !bank.hasOwnProperty( modID ) || !bank[ modID ][ bankProp ] ) return false;
+    					context[bankProp] = bank[ modID ][ bankProp ];
+    				}
+
+    				return true;
+    			}	
 
     		};
 
@@ -882,7 +896,6 @@
 
             "templates_loaded"
         ]);
-
 
 
         //::::::::::::::::::::::::::::::::::::::::
@@ -1061,7 +1074,8 @@
 
         });
 
-
+		
+		//:: MARKER STYLES
 		__M({
 			ns   : NS.loc_data,
             name : "MARKER_STYLES",
@@ -1087,11 +1101,11 @@
             			use : "hex",
 
             			hex : {
-            				bgclr  : "FFFFFF",
-            				txtclr : "D96666"
+            				bgclr  : "D96666",
+            				txtclr : "FFFFFF"
             			},
 
-            			img : "somelocmarker.png", 
+            			img : "http://www.valvolineofflagstaff.com/images/map-icon.png", 
 
             			sorting  : {
             				alpha : true,
@@ -1111,10 +1125,7 @@
             		this.buildMap();
             		this.userMarker();
             		this.locMarkers();
-
-            		console.log( this.config.markers );
-
-            		// this.complete();
+            		this.complete();
             	},
 
             	buildMap : function () {
@@ -1145,7 +1156,7 @@
             		var
             		self = this,
             		sortFuncs = {
-            			alpha : (function(){
+            			alpha : (function( locs ){
             				var alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
 
             				return function ( locArr, updateProp ) {
@@ -1155,21 +1166,24 @@
 	            				len = locArr.length;
 	            				for ( ; i < len; i += 1 ) {
 	            					currLoc = locArr[i];
-	            					currLoc[ updateProp ] = self.buildHex( self.config.markers.locs.hex, alphabet[i] );
+	            					currLoc[ updateProp ] = self.buildHex( locs, alphabet[i] );
 	            				}	
 	            			};
-            			}()),
+            			}( self.config.markers.locs )),
 
-            			numeric : function ( locArr, updateProp ) {
-            				var i, len, currLoc, style;
+            			numeric : (function( locs ){
 
-            				i   = 0;
-            				len = locArr.length;
-            				for ( ; i < len; i += 1 ) {
-            					currLoc = locArr[i];
-            					currLoc[ updateProp ] = self.buildHex( self.config.markers.locs.hex, i.toString());
-            				}	
-            			}
+	            			return function ( locArr, updateProp ) {
+	            				var i, len, currLoc, style;
+
+	            				i   = 0;
+	            				len = locArr.length;
+	            				for ( ; i < len; i += 1 ) {
+	            					currLoc = locArr[i];
+	            					currLoc[ updateProp ] = self.buildHex( locs, (i+1).toString());
+	            				}	
+	            			}
+	            		}( self.config.markers.locs ))
             		},
             		style,
             		cfg = this.config.markers.locs;
@@ -1211,7 +1225,7 @@
             	},
 
             	complete : function () {
-            		Kernel.Bank.Add( this.id, "marker_styles", this.config.markers );
+            		Kernel.Bank.add( this.id, "marker_styles", this.config.markers );
             	}
 
             }
@@ -1222,262 +1236,146 @@
 		__M({
 			ns   : NS.loc_data,
             name : "MARKER_BUILD",
-            use  : false,
-
+            use  : true,
 
             config : {
 
-            	markers : {
+            	dpn : {
+            		"marker_styles" : "MARKER_STYLES"
+            	},
 
-            		user : {
-            			style : "", // color or img path
-            			dots  : true  
-            		},
-
-            		locs : {
-            			style : "", // color or img path
-            			dots  : true 
-            		}
-            	}
+            	markerKey : "marker",
+            	iconKey   : "icon" 
 
             },
 
             module : {
 
             	init : function () {
+            		var self = this;
+
+            		if ( !Kernel.Bank.load( self.config.dpn, self ) ) return;
+            		// console.log( this.marker_styles );
+
+            		self.hub.listen( MSGS.docready_markers, function ( bool ) {
+                        self.onloadMarkers = bool;
+                        self.build();
+                        self.complete();
+                    }); 
+                    
+                    // self.hub.listen( MSGS.loc_data_sorted , function( hideFlag ) {
+
+                    //     self.hideFlag = hideFlag;
+
+                    //     self
+                    //     .updateMarkers()
+                    //     .loadUserMarker();
+                    // });
 
             	},
 
             	build : function () {
-            		
-            	}
+            		this.buildLocPins();
+                	this.buildLocMarkers();
+            	},
+
+                buildLocPins : function () {
+               		var 
+               		locData  = Kernel.LOC_DATA,
+               		locStyle = this.marker_styles.locs,
+               		iconKey  = this.config.iconKey,
+               		i, len; 
+
+               		if ( typeof locStyle == "function" ) {
+               			locStyle( locData, iconKey );
+               			return;	
+               		}
+
+               		if ( typeof locStyle === "string" ) {
+               			i   = 0;
+	               		len = locData.length;
+	               		for ( ; i < len; i += 1 ) {
+	               			locData[i][iconKey] = locStyle;
+	               		}
+               		}
+               	},
+
+               	buildLocMarkers : function () {
+               		var 
+               		locData   = Kernel.LOC_DATA,
+               		markerKey = this.config.markerKey,
+               		i, len;
+
+               		i   = 0;
+               		len = locData.length;
+               		for ( ; i < len; i += 1 ) {
+               			locData[i][ markerKey ] = this.makeGMarker( locData[i] );
+               		}
+                },
+
+                makeGMarker : function ( locObj ) {
+                	return new google.maps.Marker({
+                		map       : K.GMAP,
+                		position  : locObj.GLatLng,
+                		icon      : locObj[ this.config.iconKey ]
+                	});
+                },
+
+            	updateMarkers : function () {
+                    var
+                    self = this, 
+                    locObj, currObj,
+                    i, len, hideFlag;
+
+                    hideFlag = trim( self.hideFlag );
+                    locObj   = K.LOC_DATA;
+
+                    i   = 0;
+                    len = locObj.length;
+                    for ( ; i < len; i += 1 ) {
+                        currObj = locObj[i];
+
+                        if ( currObj[ hideFlag ] ) {
+                            currObj.marker.setMap( null );
+                            continue;
+                        }
+
+                        currObj.marker.setMap( K.GMAP );
+                    }
+
+                    return self;
+                },
+
+                loadUserMarker : function () {
+                    var 
+                    self = this,
+                    GMAP = K.GMAP,
+                    USER_COORDS = K.USER_COORDS;
+
+                    if ( K.USER_COORDS_MARKER ) K.USER_COORDS_MARKER.setMap( null );
+
+                    K.USER_COORDS_MARKER = {
+                        markerConfig : {
+                            map : GMAP,
+                            position : USER_COORDS,
+                            icon : "#123456"
+                        }
+                    };
+
+                    K.USER_COORDS_MARKER = this.algos.DEFAULT.algo.call( K.USER_COORDS_MARKER, true );
+
+                    return self;
+                },
+
+                complete : function () {
+                    this.hub.broadcast( MSGS.markers_loaded );
+                }
 
             }
 
 		});
 
 		
-		
-		//:: MARKERS FEATURE
-        // __M({
-        //     ns   : NS.loc_data,
-        //     name : "MARKER",
-        //     use  : true,
-            
-            
-        //     //:::::::::::::::::::::::::
-        //     config : {
-        //         use : "HEX",
-
-        //         //.....
-        //         HEX : {
-        //             lib : "GMarkers.js",
-        //             hex : "#123456"
-        //         },
-
-        //         //.....
-        //         IMG : {
-        //             path : ""
-        //         },
-
-        //         DEFAULT : {}
-        //     },
-        //     //:::::::::::::::::::::::::
-
-
-        //     module : {
-
-        //         init : function () {
-        //             var 
-        //             self = this,
-        //             config = self.config;
-
-        //             if ( $.isEmptyObject( config ) ) return;
-
-        //             self.hub.listen( MSGS.docready_markers, function ( bool ) {
-
-        //                 self.onloadMarkers = bool;
-
-        //                 self.util().build();
-
-        //             }); 
-                    
-        //             self.hub.listen( MSGS.loc_data_sorted , function( hideFlag ) {
-
-        //                 self.hideFlag = hideFlag;
-
-        //                 self
-        //                 .updateMarkers()
-        //                 .loadUserMarker();
-        //             });
-        //         },
-
-        //         decName : "marker",
-
-        //         algos : function () {
-        //             var self = this;
-
-        //             self.algos = {
-
-        //                 DEFAULT : {
-        //                     async : false,
-        //                     algo : function ( isUser ) {
-        //                     	var marker = new google.maps.Marker( this.markerConfig );
-
-        //                     	if ( isUser ) marker.setZIndex( google.maps.Marker.MAX_ZINDEX );
-
-        //                         return marker;
-        //                     }
-        //                 },
-
-        //                 HEX : {
-        //                     async : function( o ) {
-        //                         K.Util.loadScript( o.lib, o.cb );
-        //                     },
-        //                     algo : function () {
-        //                         var 
-        //                         styleIconClass = new StyledIcon( StyledIconTypes.CLASS, { color : this.hex } );
-
-        //                         this.markerConfig.styleIcon = new StyledIcon( StyledIconTypes.MARKER, {}, styleIconClass );
-
-        //                         return new StyledMarker( this.markerConfig );
-        //                     }
-        //                 },
-
-        //                 IMG : {
-        //                     async : false,
-        //                     algo : function () {
-        //                         this.markerConfig.icon = $.trim( this.path );
-        //                         return new google.maps.Marker(  this.markerConfig );
-        //                     }
-        //                 } 
-
-        //             };
-
-        //             return self.algos;
-        //         },
-
-        //         build : function () {
-        //             var 
-        //             self   = this,
-        //             algos  = self.algos(),
-        //             config = self.config,
-        //             mode   = trim( config.use );
-
-        //             if ( !(mode && config.hasOwnProperty( mode ) && algos.hasOwnProperty( mode )) ) return false;
-
-        //             config = config[mode];
-
-        //             if ( typeof algos[mode].async === "function" ) {
-        //                 algos[mode].async({
-        //                     lib : config.lib,
-        //                     cb  : function () {
-        //                         self.loadMarkers( algos[mode].algo, config );
-        //                     }
-        //                 });
-        //             } 
-        //             else self.loadMarkers( algos[mode].algo, config);
-
-        //         },
-
-        //         loadMarkers : function ( algo, config ) {
-        //             var
-        //             self = this, 
-        //             prop, i, len, 
-        //             markerConfig, locData;
-
-        //             locData = K.LOC_DATA;
-
-        //             i   = 0;
-        //             len = locData.length;
-
-        //             for ( ; i < len; i += 1 ) {
-        //                 config.markerConfig = self.util.getMarkerConfig( locData[i] );
-
-        //                 if ( !config.markerConfig ) continue;
-
-        //                 locData[i][ self.decName ] = algo.apply(config);
-
-        //                 if ( !self.onloadMarkers ) locData[i][ self.decName ].setMap( null )
-        //             }
-
-        //             self.complete();
-        //         },
-
-        //         loadUserMarker : function () {
-        //             var 
-        //             self = this,
-        //             GMAP = K.GMAP,
-        //             USER_COORDS = K.USER_COORDS;
-
-        //             if ( K.USER_COORDS_MARKER ) K.USER_COORDS_MARKER.setMap( null );
-
-        //             K.USER_COORDS_MARKER = {
-        //                 markerConfig : {
-        //                     map : GMAP,
-        //                     position : USER_COORDS,
-        //                     icon : "#123456"
-        //                 }
-        //             };
-
-        //             K.USER_COORDS_MARKER = this.algos.DEFAULT.algo.call( K.USER_COORDS_MARKER, true );
-
-        //             return self;
-        //         },  
-
-        //         util : function () {
-        //             var __;
-
-        //             __ = {
-
-        //                 getMarkerConfig : function ( locData ) {
-        //                     var config = {};
-
-        //                     if ( !K.GMAP || !locData.GLatLng ) return; 
-
-        //                     return {
-        //                         position : locData.GLatLng,
-        //                         map      : K.GMAP
-        //                     };
-        //                 }
-        //             };
-
-        //             //....
-        //             this.util = __;
-        //             return this;
-        //         },
-
-        //         updateMarkers : function () {
-        //             var
-        //             self = this, 
-        //             locObj, currObj,
-        //             i, len, hideFlag;
-
-        //             hideFlag = trim( self.hideFlag );
-        //             locObj   = K.LOC_DATA;
-
-        //             i   = 0;
-        //             len = locObj.length;
-        //             for ( ; i < len; i += 1 ) {
-        //                 currObj = locObj[i];
-
-        //                 if ( currObj[ hideFlag ] ) {
-        //                     currObj.marker.setMap( null );
-        //                     continue;
-        //                 }
-
-        //                 currObj.marker.setMap( K.GMAP );
-        //             }
-
-        //             return self;
-        //         },
-
-        //         complete : function () {
-        //             this.hub.broadcast( MSGS.markers_loaded );
-        //         }
-
-        //     }
-        // });
 
 		
 		//:: LIST VIEW FEATURE
