@@ -20,13 +20,13 @@
         };
 
     	$.fn.nodeListener = function ( o ) {
-              var hn, i, len, self = this;
+              var hn, i, len, _I = this;
               i   = 0;
               len = parseInt(o.tries, 10);
 
               hn  = setInterval(function(){
 
-                   var _cn = self.find(o.cn);
+                   var _cn = _I.find(o.cn);
                    if (i >= len) {
                         clearInterval(hn);
                         return false;
@@ -146,20 +146,19 @@
 
         GMAP : { },
 
-        GMAP_BOUNDS : { },
-
     	Util : {
 
-    		hasBoolProp : function ( obj, bool, retProp ) {
-    			var prop;
+    		hasBoolProp : function ( obj, bool, retKey ) {
+    			var test, needle;
 
-    			for ( prop in obj ) {
-    				if ( typeof obj[prop] === "boolean" && obj[prop] === bool ) {
-    					 return !!retProp ? prop : true;
+    			test = _.find( obj, function( v, k ) {
+    				if ( _.isBoolean( v ) && v === bool ) {
+    					needle = k;
+    					return true;
     				}
-    			}
+    			});
 
-    			return false;
+    			return !!test ? ( !!retKey ? needle : test ) : false;
     		},
 
             ajax : function ( o ) {
@@ -168,7 +167,7 @@
             },
 
             isType : function (type, o) {
-                return o && typeof o === $.trim( type ); 
+                return o && typeof o === trim( type ); 
             },
 
             arr2Str : function ( arr ) {
@@ -176,7 +175,6 @@
             },
 
             add_QS_Params : function ( qStr, param ) {
-
                 var i, len, trim = $.trim, addParam;
 
                 addParam = function ( param ) {
@@ -222,11 +220,8 @@
     		},
 
     		xml2json : function ( filename, cb ) {
-
                 var data = new $.XMLtoJSON({ url : trim( filename ) });
-
                 if ( typeof cb === "function" && typeof json === "object" ) cb( json );
-
                 return data;
     		},
 
@@ -238,10 +233,8 @@
     				if (typeof callback === "function") callback();
     			};
 
-
     			script = document.createElement("script")
     		    script.type = "text/javascript";
-
 
     		    if (script.readyState){  //IE
     		        script.onreadystatechange = function() {
@@ -321,7 +314,7 @@
                 };
 
                 return function ( val, regex ) {
-                    return lib.hasOwnProperty(trim(regex)) ? lib[regex].test(val) : false;
+ 					return _.has( lib, trim(regex) ) ? lib[regex].test(val) : false; 
                 };  
             }())
     	},
@@ -341,17 +334,21 @@
     			},
 
     			load : function ( obj, context ) {
-    				var prop, modID, bankProp;
+    				var modID, bankProp, pass = true;
 
-    				for ( prop in obj ) {
-    					modID    = trim( obj[prop] );	
-    					bankProp = trim( prop ); 
+    				_.each( obj, function( v, k ) {
+    					modID    = trim( v );
+    					bankProp = trim( k );
 
-    					if ( !bank.hasOwnProperty( modID ) || !bank[ modID ][ bankProp ] ) return false;
-    					context[bankProp] = bank[ modID ][ bankProp ];
-    				}
+    					if ( !_.has( bank, modID ) || !bank[ modID ][ bankProp ] ) {
+    						pass = false;
+    						return;
+    					}
 
-    				return true;
+    					context[ bankProp ] = bank[ modID ][ bankProp ];
+    				});
+
+    				return pass;
     			}	
 
     		};
@@ -456,17 +453,17 @@
             module : {
 
                 init : function () {
-                    var self = this;
-                    self.hub.listen( MSGS.gmap_api_loaded, function(){
-                        self.addCoords();
-                        self.hub.broadcast( MSGS.loc_coords_ready );
+                    var _I = this;
+                    _I.hub.listen( MSGS.gmap_api_loaded, function(){
+                        _I.addCoords();
+                        _I.hub.broadcast( MSGS.loc_coords_ready );
                     });
                 },
 
                 addCoords : function () {
                     var 
-                    self   = this, 
-                    config = self.config,
+                    _I     = this, 
+                    config = _I.config,
                     lat    = config.lat, 
                     lng    = config.lng;
 
@@ -531,27 +528,27 @@
             module : {
 
                 init : function () {
-                    var self = this;
+                    var _I = this;
 
-                    self.hub.listen( MSGS.markers_loaded, function () {
+                    _I.hub.listen( MSGS.markers_loaded, function () {
 
-                        self.GMAPInfoWindow = new google.maps.InfoWindow();
-                        self.template = K.TEMPLATES[ trim(self.config.tmplNodeId) ];
+                        _I.GMAPInfoWindow = new google.maps.InfoWindow();
+                        _I.template       = K.TEMPLATES[ trim(_I.config.tmplNodeId) ];
 
-                        if ( self.template ) self.buildInfoWindowViews();
+                        if ( _I.template ) _I.buildInfoWindowViews();
 
                     });
                 },
 
                 buildInfoWindowViews : function  () {
                     var
-                    self     = this,
-                    template = _.template( self.template );
+                    _I     = this,
+                    template = _.template( _I.template );
 
                     _.each( K.LOC_DATA, function( o ) {
                     	o.infoWindow = $( template({ data : o }) )[0];
 
-                    	self.createMarkerEvent({
+                    	_I.createMarkerEvent({
                             marker     : o.marker,
                             infoWindow : o.infoWindow 
                         });
@@ -559,11 +556,11 @@
                 },
 
                 createMarkerEvent : function ( o ) {
-                    var self = this;
-                    google.maps.event.addListener( o.marker, self.config.userEvent, function() {
+                    var _I = this;
+                    google.maps.event.addListener( o.marker, _I.config.userEvent, function() {
 
-                        self.GMAPInfoWindow.setContent( o.infoWindow );
-                        self.GMAPInfoWindow.open( K.GMAP, o.marker);
+                        _I.GMAPInfoWindow.setContent( o.infoWindow );
+                        _I.GMAPInfoWindow.open( K.GMAP, o.marker);
 
                     });
                 }
@@ -626,11 +623,11 @@
             	},
 
             	buildMap : function () {
-            		var self = this;
-            		self.buildMap = {
-	            		hex : self.buildHex,
-	            		img : self.buildImg,
-	            		def : self.buildHex
+            		var _I = this;
+            		_I.buildMap = {
+	            		hex : _I.buildHex,
+	            		img : _I.buildImg,
+	            		def : _I.buildHex
             		};
             	},
 
@@ -651,7 +648,29 @@
 
             	locMarkers : function () {
             		var
-            		self = this,
+            		_I = this,
+
+            		// sortFuncs = (function(){
+            		// 	var 
+            		// 	alphabet = "abcdefghijklmnopqrstuvwxyz".split(""),
+            		// 	locs     = _I.config.markers.locs,
+
+            		// 	sort = function () {
+
+            		// 	};
+
+            		// 	return {
+            		// 		alpha   : function ( locArr, updateProp ) {
+
+            		// 		},
+            		// 		numeric : function ( locArr, updateProp ) {
+
+            		// 		}
+            		// 	};
+
+            		// }()),
+
+
             		sortFuncs = {
             			alpha : (function( locs ){
             				var alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
@@ -663,10 +682,10 @@
 	            				len = locArr.length;
 	            				for ( ; i < len; i += 1 ) {
 	            					currLoc = locArr[i];
-	            					currLoc[ updateProp ] = self.buildHex( locs, alphabet[i] );
+	            					currLoc[ updateProp ] = _I.buildHex( locs, alphabet[i] );
 	            				}	
 	            			};
-            			}( self.config.markers.locs )),
+            			}( _I.config.markers.locs )),
 
             			numeric : (function( locs ){
 
@@ -677,11 +696,12 @@
 	            				len = locArr.length;
 	            				for ( ; i < len; i += 1 ) {
 	            					currLoc = locArr[i];
-	            					currLoc[ updateProp ] = self.buildHex( locs, (i+1).toString());
+	            					currLoc[ updateProp ] = _I.buildHex( locs, (i+1).toString());
 	            				}	
 	            			}
-	            		}( self.config.markers.locs ))
+	            		}( _I.config.markers.locs ))
             		},
+            		
             		style,
             		cfg = this.config.markers.locs;
 
@@ -700,7 +720,7 @@
             		}	
 
             		// return sort method
-            		cfg.sorting = Kernel.Util.hasBoolProp( cfg.sorting, true, true );
+            		cfg.sorting = K.Util.hasBoolProp( cfg.sorting, true, true );
             		if ( cfg.sorting && sortFuncs.hasOwnProperty( cfg.sorting ) ) {
             			this.config.markers.locs = sortFuncs[ cfg.sorting ];
             			return;
@@ -752,21 +772,21 @@
             module : {
 
             	init : function () {
-            		var self = this;
+            		var _I = this;
 
-            		if ( !Kernel.Bank.load( self.config.dpn, self ) ) return;
+            		if ( !Kernel.Bank.load( _I.config.dpn, _I ) ) return;
 
-            		self.hub.listen( MSGS.docready_markers, function ( bool ) {
-                        self.onloadMarkers = bool;
-                        self.build();
-                        self.complete();
+            		_I.hub.listen( MSGS.docready_markers, function ( bool ) {
+                        _I.onloadMarkers = bool;
+                        _I.build();
+                        _I.complete();
                     }); 
                     
-                    self.hub.listen( MSGS.loc_data_sorted , function( hideFlag ) {
-                        self.hideFlag = hideFlag;
-                        self.buildLocPins();
-                        self.updateMarkers();
-                        self.loadUserMarker();
+                    _I.hub.listen( MSGS.loc_data_sorted , function( hideFlag ) {
+                        _I.hideFlag = hideFlag;
+                        _I.buildLocPins();
+                        _I.updateMarkers();
+                        _I.loadUserMarker();
                     });
 
             	},
@@ -795,12 +815,12 @@
 
                	buildLocMarkers : function () {
                		var
-               		self      = this, 
+               		_I      = this, 
                		markerKey = this.config.markerKey;
 
                		_.each( K.LOC_DATA, function( o ) {
-               			o[ markerKey ] = self.makeGMarker( o );
-               			if ( !self.onloadMarkers ) o[ markerKey ].setMap( null );
+               			o[ markerKey ] = _I.makeGMarker( o );
+               			if ( !_I.onloadMarkers ) o[ markerKey ].setMap( null );
                		});
                 },
 
@@ -814,9 +834,9 @@
 
             	updateMarkers : function () {
                     var
-                    self      = this, 
+                    _I      = this, 
                     markerKey = this.config.markerKey,
-                    hideFlag  = trim( self.hideFlag );
+                    hideFlag  = trim( _I.hideFlag );
 
                     _.each( K.LOC_DATA, function( o ) {
 
@@ -825,12 +845,12 @@
                             return;
                         }
 
-                        o[markerKey].setIcon( o[ self.config.iconKey ] );
+                        o[markerKey].setIcon( o[ _I.config.iconKey ] );
                         o[markerKey].setMap( K.GMAP );
 
                     });
 
-                    return self;
+                    return _I;
                 },
 
                 loadUserMarker : function () {
@@ -853,7 +873,7 @@
                     	K.USER_COORDS_MARKER.setZIndex( google.maps.Marker.MAX_ZINDEX );
                     }
 
-                    return self;
+                    return this;
                 },
 
                 complete : function () {
@@ -879,46 +899,46 @@
             module : {
 
                 init : function () {
-                    var self = this;
-
-                    self.hub.listen( MSGS.docready_loclist, function () {
-                        self.config.loadListOnload = true;
+                    var _I = this, L = _I.hub.listen;
+                    
+                    L( MSGS.docready_loclist, function () {
+                        _I.config.loadListOnload = true;
                     });
                     
-                    self.hub.listen( MSGS.templates_loaded, function(){
+                    L( MSGS.templates_loaded, function(){
 
-                        self.template = K.TEMPLATES[ self.config.tmplNodeId ];
-                        if ( !self.template ) return;
+                        _I.template = K.TEMPLATES[ _I.config.tmplNodeId ];
+                        if ( !_I.template ) return;
                         
-                        self.config.listRootNode = $( self.config.listRootNode );
+                        _I.config.listRootNode = $( _I.config.listRootNode );
 
-                        if ( !K.Util.isNode( self.config.listRootNode ) ) return;
+                        if ( !K.Util.isNode( _I.config.listRootNode ) ) return;
                         
-                        if ( !self.config.loadListOnload ) return;
+                        if ( !_I.config.loadListOnload ) return;
 
-                        self.buildViews();
-                        self.render();
+                        _I.buildViews();
+                        _I.render();
 
                     });
 
-                    self.hub.listen( MSGS.loc_data_sorted , function( hideFlag ) {
-                        self.buildViews( hideFlag );
-                        self.render();
+                    L( MSGS.loc_data_sorted , function( hideFlag ) {
+                        _I.buildViews( hideFlag );
+                        _I.render();
                     });
 
                 },
 
                 buildViews : function ( hideFlag ) {
                     var
-                    self     = this,
-                    template = _.template( self.template );
+                    _I     = this,
+                    template = _.template( _I.template );
 
-                    self.fullListView = "";
-                    self.config.listRootNode.empty();
+                    _I.fullListView = "";
+                    _I.config.listRootNode.empty();
 
                     _.each( K.LOC_DATA, function( o ) {
                     	o.listView = template({ data : o });
-                    	if ( !o[ hideFlag ] ) self.fullListView += o.listView;
+                    	if ( !o[ hideFlag ] ) _I.fullListView += o.listView;
                     });
 
                 },
@@ -959,12 +979,12 @@
             module : {
 
                 init : function () {
-                    var self = this;
-
-                    self.hub.listen( MSGS.search_model_ready, function ( config ) {
-                        $.extend( self.config, config );
-                        self.build();
-                        self.hub.listen( MSGS.user_search_response, self.triggerError);
+                    var _I = this, L = _I.hub.listen;
+                     
+                    L( MSGS.search_model_ready, function ( config ) {
+                        $.extend( _I.config, config );
+                        _I.build();
+                        L( MSGS.user_search_response, _I.triggerError);
                     });
 
                 },
@@ -976,11 +996,11 @@
 
                 bindEvents : function () {
                     var
-                    self   = this,
+                    _I     = this,
                     isNode = K.Util.isNode,
-                    events = self.events;
+                    events = _I.events;
 
-                    _.each( self.config.nodes, function( v, k, nodes ) {
+                    _.each( _I.config.nodes, function( v, k, nodes ) {
                     	k = trim( k );
 
                     	if ( !_.has( events, k ) ) return;
@@ -994,8 +1014,8 @@
                 },
 
                 events : function () {
-                    var self        = this,
-	                    config      = self.config,
+                    var _I        = this,
+	                    config      = _I.config,
 	                    errClass    = config.errClass,
 	                    placeholder = config.placeholder;
 
@@ -1014,7 +1034,7 @@
 						node.css("color", !!add ? config.errColor : "#000" );
 					};
 
-                    self.events = {
+                    _I.events = {
                         input : function () {
 
                         	this.val( placeholder ).data("placeholder", true);
@@ -1033,7 +1053,7 @@
 
                                 keydown : function ( e ) {
                                 	if ( userHitEnter( e ) ) {
-                                		self.config.nodes.btn.trigger("click");
+                                		_I.config.nodes.btn.trigger("click");
 										e.preventDefault();
 										return false;
                                 	}
@@ -1063,8 +1083,8 @@
                             this.on({
 
                                 click : function ( e ) {
-                                    var searchNode = self.config.nodes.input.removeClass("error");
-                                    self.userSearchRequest( trim( searchNode.val() ) );
+                                    var searchNode = _I.config.nodes.input.removeClass("error");
+                                    _I.userSearchRequest( trim( searchNode.val() ) );
                                     e.preventDefault();
                                 }
 
@@ -1072,7 +1092,7 @@
                         }
                     };
 
-                    return self;                
+                    return _I;                
                 },
 
                 userSearchRequest : function ( searchVal ) {
@@ -1116,26 +1136,25 @@
                 }
             },
 
-
             module : {
 
                 init : function () {
-                    var self = this;
+                    var _I = this, L = _I.hub.listen, B = _I.hub.broadcast;
 
-                    self.hub.broadcast( MSGS.docready_loclist );
+                    B( MSGS.docready_loclist );
 
-                    self.hub.listen( MSGS.gmap_dom_ready, function(){
+                    L( MSGS.gmap_dom_ready, function(){
 
-                        self.GMAP_GEOCODER = new google.maps.Geocoder();
+                        _I.GMAP_GEOCODER = new google.maps.Geocoder();
 
-                        self.hub.broadcast( MSGS.docready_markers, true );
+                        B( MSGS.docready_markers, true );
 
-                        self.hub.broadcast( MSGS.search_model_ready, {
-                            placeholder : self.config.messages.placeholder,
-                            errColor : self.config.styles.error
+                        B( MSGS.search_model_ready, {
+                            placeholder : _I.config.messages.placeholder,
+                            errColor : _I.config.styles.error
                         });
 
-                        self.hub.listen( MSGS.user_search_request, self.geoCodeSearch);
+                        L( MSGS.user_search_request, _I.geoCodeSearch);
 
                     });
                 },
@@ -1143,7 +1162,7 @@
                 build : function () {
                     if ( typeof K.USER_COORDS !== "object" ) return;
 
-                    this.config.boundary = parseInt(this.config.boundary, 10);
+                    this.config.boundary = parseInt( this.config.boundary, 10 );
 
                     this
                     .computeDistances()
@@ -1159,17 +1178,17 @@
                 },
 
                 geoCodeSearch : function ( userSearch ) {
-                    var self = this;
+                    var _I = this;
 
-                    self.GMAP_GEOCODER.geocode({ address : userSearch }, function( results, status ) {
+                    _I.GMAP_GEOCODER.geocode({ address : userSearch }, function( results, status ) {
 
                         if ( status != google.maps.GeocoderStatus.OK ) {
-                            self.triggerError( self.config.messages.searchError );
+                            _I.triggerError( _I.config.messages.searchError );
                             return;
                         }
 
                         geoData = results[0].geometry.location;
-                        self.doUpdate( new google.maps.LatLng(geoData.lat(), geoData.lng()) );
+                        _I.doUpdate( new google.maps.LatLng(geoData.lat(), geoData.lng()) );
                     });
                 },
 
@@ -1180,16 +1199,16 @@
                 },
 
                 flagOutOfBoundsLocs : function () {
-                    var self = this;
+                    var _I = this;
     
-                    self.hiddenLocs = 0;
+                    _I.hiddenLocs = 0;
 
                     _.each( K.LOC_DATA, function( o ) {
-                    	o[ self.config.hideFlag ] = self.checkRadius( o );
-                    	if ( o[ self.config.hideFlag ] ) self.hiddenLocs += 1;
+                    	o[ _I.config.hideFlag ] = _I.checkRadius( o );
+                    	if ( o[ _I.config.hideFlag ] ) _I.hiddenLocs += 1;
                     });
 
-                    return self;
+                    return _I;
                 },
 
                 sortLocs : function () {
@@ -1199,8 +1218,8 @@
 
                 computeDistances : function () {
                     var
-                    self        = this, 
-                    config      = self.config,
+                    _I        = this, 
+                    config      = _I.config,
                     locData     = K.LOC_DATA,
                     userCoords  = K.USER_COORDS,
 
@@ -1210,7 +1229,7 @@
                     lng = config.coordKeys.lng,
 
                     haversineObj = {
-                        unit : self.config.haversineUnit,
+                        unit : _I.config.haversineUnit,
                         from : {
                             lat  : userCoords.lat(),
                             lng  : userCoords.lng()
@@ -1226,22 +1245,22 @@
 	                            lng : o[ lng ]
 	                        };
 
-	                        o[ self.config.distanceKey ] = K.Util.haversine( haversineObj ).toFixed(2);
+	                        o[ _I.config.distanceKey ] = K.Util.haversine( haversineObj ).toFixed(2);
                     	}
 
                     });
 
-                    return self;
+                    return _I;
                 },
 
                 locsFound : function () {
-                    var self = this;
+                    var _I = this;
 
-                    if ( self.hiddenLocs === K.LOC_DATA.length ) {
-                        self.triggerError( self.config.messages.noResults ); 
+                    if ( _I.hiddenLocs === K.LOC_DATA.length ) {
+                        _I.triggerError( _I.config.messages.noResults ); 
                     }
 
-                    return self;
+                    return _I;
                 },
 
                 triggerError : function ( msg ) {
@@ -1287,30 +1306,30 @@
             module : {
 
                 init : function () {
-                    var self = this;
+                    var _I = this, L = _I.hub.listen, B = _I.hub.broadcast;
 
-                    self.hub.listen( MSGS.gmap_dom_ready, function() {
+                    L( MSGS.gmap_dom_ready, function() {
 
-                        self.GMAP_GEOCODER = new google.maps.Geocoder();
+                        _I.GMAP_GEOCODER = new google.maps.Geocoder();
 
-                        self.hub.broadcast( MSGS.docready_markers, false );
+                        B( MSGS.docready_markers, false );
 
-                        self.hub.broadcast( MSGS.search_model_ready, {
-                            placeholder : self.config.messages.placeholder
+                        B( MSGS.search_model_ready, {
+                            placeholder : _I.config.messages.placeholder
                         });
 
-                        self.hub.listen( MSGS.user_search_request, function( userSearch ) {
+                        L( MSGS.user_search_request, function( userSearch ) {
 
-                        	// self.userSearch = trim( userSearch );
+                        	// _I.userSearch = trim( userSearch );
 
-                            self.userZip = trim( userSearch );
+                            _I.userZip = trim( userSearch );
 
-                            if ( !self.checkZip() ) {
-                                self.triggerError( self.config.messages.searchError );
+                            if ( !_I.checkZip() ) {
+                                _I.triggerError( _I.config.messages.searchError );
                                 return;
                             }
 
-                            self.geoCodeSearch( self.build );
+                            _I.geoCodeSearch( _I.build );
 
                         });
 
@@ -1327,7 +1346,7 @@
 
                 checkTerritory : function () {
                     var
-                    self = this,
+                    _I = this,
                     LOC_DATA = K.LOC_DATA,
                     i, len, currLoc,
 
@@ -1337,24 +1356,24 @@
                         i   = 0;
                         len = zipObjArr.length;
                         for ( ; i < len; i+= 1 ) {
-                            if ( zipObjArr[i]._code == self.userZip ) return true;
+                            if ( zipObjArr[i]._code == _I.userZip ) return true;
                         }
 
                         return false;
                     };
 
-                    self.hiddenLocs = 0;
+                    _I.hiddenLocs = 0;
                     i   = 0;
                     len = LOC_DATA.length;
                     for ( ; i < len; i += 1 ) {
 
                         currLoc = LOC_DATA[i];
-                        currLoc[ self.config.hideFlag ] = !zipMatch( currLoc.zip ) ? true : false;
-                        if ( currLoc[ self.config.hideFlag ] ) self.hiddenLocs += 1;
+                        currLoc[ _I.config.hideFlag ] = !zipMatch( currLoc.zip ) ? true : false;
+                        if ( currLoc[ _I.config.hideFlag ] ) _I.hiddenLocs += 1;
 
                     }
 
-                    return self;
+                    return _I;
                 },
 
                 checkZip : function () {
@@ -1362,12 +1381,12 @@
                 },
 
                 geoCodeSearch : function ( cb ) {
-                    var self = this;
+                    var _I = this;
 
-                    self.GMAP_GEOCODER.geocode({ address : self.userZip }, function( results, status ) {
+                    _I.GMAP_GEOCODER.geocode({ address : _I.userZip }, function( results, status ) {
 
                         if ( status != google.maps.GeocoderStatus.OK ) {
-                            self.triggerError( self.config.messages.searchError );
+                            _I.triggerError( _I.config.messages.searchError );
                             return;
                         }
 
@@ -1379,13 +1398,13 @@
                 },
 
                 locFound : function () {
-                    var self = this;
+                    var _I = this;
 
-                    if ( self.hiddenLocs === K.LOC_DATA.length ) {
-                        self.triggerError( self.config.messages.noResults ); 
+                    if ( _I.hiddenLocs === K.LOC_DATA.length ) {
+                        _I.triggerError( _I.config.messages.noResults ); 
                     }
 
-                    return self;
+                    return _I;
                 },
 
                 triggerError : function ( msg ) {
@@ -1421,11 +1440,11 @@
             module : {
                 
                 init : function () {
-                    var self = this;
+                    var _I = this;
 
-                    self.hub.listen( MSGS.gmap_config_ready, function( config ){
-                        self.build( config );
-                        self.hub.broadcast( MSGS.gmap_dom_ready, K.GMAP);
+                    _I.hub.listen( MSGS.gmap_config_ready, function( config ){
+                        _I.build( config );
+                        _I.hub.broadcast( MSGS.gmap_dom_ready, K.GMAP);
                     });
                     
                 },
@@ -1471,11 +1490,11 @@
             module : {
 
                 init : function () {
-                    var self = this;
+                    var _I = this;
 
-                    self.hub.listen( MSGS.gmap_api_loaded, function () {
-                        self.build();
-                        self.hub.broadcast( MSGS.gmap_config_ready, self.config );
+                    _I.hub.listen( MSGS.gmap_api_loaded, function () {
+                        _I.build();
+                        _I.hub.broadcast( MSGS.gmap_config_ready, _I.config );
                     });
                 },
 
@@ -1570,18 +1589,16 @@
                 },
 
                 load : function () {
-                    var self = this;
+                    var _I = this;
 
                     K.Util.ajax({
-                    	type : "GET",
-                        url : trim( self.config.file ),
-                        success : self.prepare
+                    	type    : "GET",
+                        url     : trim( _I.config.file ),
+                        success : _I.prepare
                     });
                 },
 
                 prepare : function ( tmplHTML ) {
-                    var self = this;
-
                     $("<div />")
                     .append( tmplHTML )
                     .find("script")
@@ -1594,7 +1611,7 @@
                         K.TEMPLATES[ tmplId ] = tmplTxt.replace(/\>[\r\n|\n|\n\t ]+\</g, "><");
                     });
 
-                    self.hub.broadcast( MSGS.templates_loaded );
+                    this.hub.broadcast( MSGS.templates_loaded );
                 }
             }
         });
