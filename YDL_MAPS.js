@@ -41,490 +41,7 @@
               }, o.interval);
         };
 
-        $.XMLtoJSON = function( options ){
-       
-            // Define Initialization
-            this.init = function(){
-              
-              this.xml = false,
-              this.document = false;
-              this.json = {};
-              this.duration = new Date();
-              
-              // Merge options with defaults
-              this.options = $.extend({
-                 url: false,
-                 xmlString: false,
-                 namespaces: false,
-                 valueIdentifier: '$',
-                 attributeIdentifier: '_',
-                 emptyValuesAsNull: false,
-                 modify: {},
-                 clearEmptyNodes: false,
-                 cache: false,
-                 detectTypes: false,
-                 filter: null,
-                 fallback: null,
-                 log: false
-              }, options);
-              
-              // Get XML as string
-              if(this.options.url) this.receiveXML();
-              if(this.options.xmlString) this.xml = this.options.xmlString;
-              
-              if(this.xml){
-              
-                 // Build XML DOM
-                 this.parseXML();
-                 
-                 // Get JSON
-                 this.convertXML();
-                 
-                 // Throw fallback method if JSON is empty or invalid
-                 if(this.options.fallback != null && (this.json == {} || this.json.parsererror)) this.options.fallback({message : 'XML is invalid', code : 500});
-              
-                 // Modify JSON
-                 this.modifyJSON();
-              }
-
-              // Time taken
-              this.duration = new Date() - this.duration + ' ms';
-            }
-
-            // Get XML as text from a external url
-            this.receiveXML = function(){
-              var url = this.options.url,
-                    response;
-              $.ajax({
-                 type: 'GET',
-                 url: url,
-                 async: false,
-                 dataType: 'text',
-                 cache: this.options.cache,
-                 complete: function(data){
-                    if(data.responseText) response = data.responseText.replace(/^\s+/, '');
-                 }
-              });
-              if(response){
-                 this.xml = response;
-              }
-              else{
-                 this.throwError('Cannot receive XML from ' + this.options.url);
-                 if(this.options.fallback != null) this.options.fallback({message : 'Cannot receive XML from ' + this.options.url, code : 404});
-              }
-            }
-
-            // Parse XML
-            this.parseXML = function(){
-              this.xml = this.xml.replace(/^[\s\n\r\t]*[<][\?][xml][^<^>]*[\?][>]/, '');
-              if(window.ActiveXObject){
-                 this.document = new ActiveXObject('Microsoft.XMLDOM');
-                 this.document.async = false;
-                 this.document.loadXML(this.xml);
-              }
-              else{
-                 this.document = new DOMParser();
-                 this.document = this.document.parseFromString(this.xml, 'application/xml');
-              }
-              if(!this.xml || !this.document) this.throwError('Cannot parse XML');
-            }
-
-            // Convert XML to JSON (inner closure, recursive)
-            // Increase performance by replace jQuery.each with native Javascript for-loop (should be 2-3 times faster, depeding von the Document size)
-            this.convertXML = function(){
-              var _this = this;
-              (function evaluate(node, obj, options, ns) {
-                 
-                 // Node value valueIdentifier
-                 var valueIdentifier = options.valueIdentifier,
-                       attributeIdentifier = options.attributeIdentifier;
-                 
-                 // Document node
-                 if(node.nodeType === 9){
-                    $.each(node.childNodes, function(){
-                       evaluate(this, obj, options, ns);
-                    });
-                 }
-              
-                 // Element node
-                 else if (node.nodeType === 1){
-                 
-                    // Set active namespace to {valueIdentifier : true} if ns.$ is set
-                    var activeNamespace = ns[valueIdentifier] ? { valueIdentifier : true } : {};
-                    // Current node name
-                    var nodeName = node.nodeName;
-                    // Add namespaces
-                    var addNamespaces = options.namespaces == true ? true : false;
-                    // Current
-                    var current = {};
-                    // Namespace
-                    if (nodeName.indexOf(':') != -1) activeNamespace[nodeName.substr(0, nodeName.indexOf(':'))] = true;
-                    
-                    // Attributes
-                    $.each(node.attributes, function(){
-                       var name = this.nodeName;
-                       var value = this.nodeValue;
-                       if(_this.options.filter) value = _this.options.filter(value);
-                       if(_this.options.detectTypes) value = _this.detectTypes(value);
-                       
-                       if(name === 'xmlns'){ // general namespace
-                          ns[valueIdentifier] = value;
-                          activeNamespace[valueIdentifier] = true;
-                       }
-                       else if(name.indexOf('xmlns:') === 0){ // specific regular namespace
-                          ns[name.substr(name.indexOf(':') + 1)] = value;
-                       }
-                       else if(name.indexOf(':') != -1){  // some other namespace type - may throw a parsererror before 
-                          current[attributeIdentifier + name] = value;
-                          activeNamespace[name.substr(0, name.indexOf(':'))] = true;
-                       }
-                       else{ // regular attribute
-                          if(_this.options.emptyValuesAsNull && (value === '' || value === null)){
-                             current[attributeIdentifier + name] = null;
-                          }
-                          else{
-                             current[attributeIdentifier + name] = value; 
-                          }
-                       }
-                    });
-                    
-                    // Add namespaces
-                    var namespace = addNamespaces ? ns : activeNamespace;
-                    $.each(namespace, function(key, value){
-                       if(namespace.hasOwnProperty(key)){
-                          current[attributeIdentifier + 'xmlns'] = current[attributeIdentifier + 'xmlns'] || {};
-                          current[attributeIdentifier + 'xmlns'][key] = value;
-                       }
-                    });
-                    
-                    // Add
-                    if(obj[nodeName] instanceof Array){
-                       obj[nodeName].push(current);
-                    }
-                    else if(obj[nodeName] instanceof Object){
-                       obj[nodeName] = [obj[nodeName], current];
-                    }
-                    else{
-                       obj[nodeName] = current;
-                    }
-                    if(_this.options.emptyValuesAsNull && node.childNodes.length == 0){
-                       obj[nodeName] = null;
-                    }
-                    
-                    // Recursion
-                    $.each(node.childNodes, function(){
-                       evaluate(this, current, options, ns);
-                    });
-                 }
-              
-                 // Text node
-                 else if(node.nodeType === 3){
-                    var value = node.nodeValue;
-                    if(!value.match(/[\S]+/)) return; // Whitespace
-                    if(_this.options.filter) value = _this.options.filter(value);
-                    if(_this.options.detectTypes) value = _this.detectTypes(value);
-                    // Add
-                    if(obj[valueIdentifier] instanceof Array){
-                       obj[valueIdentifier].push(value);
-                    }
-                    else if(obj[valueIdentifier] instanceof Object){
-                       obj[valueIdentifier] = [obj[valueIdentifier], value];
-                    }
-                    else{
-                       obj[valueIdentifier] = value;
-                    }
-                 }
-
-              })(this.document, this.json, this.options, {}); // Execute
-            }
-
-            // Modify JSON
-            this.modifyJSON = function(){
-              var _this = this,
-                    attributeIdentifier = this.options.attributeIdentifier;
-              $.each(this.options.modify, function(url, modified){
-                 // var content = _this.get(url);
-                 // TODO _this.remove(url) does not work for Array elements which are selected by find without array brackets
-                 var all = url.match(/\.\*$/) ? true : false;
-                 var url = all ? url.replace(/\.\*$/, '') : url;
-                 var content = _this.find(url);
-                 if(content){
-                    var newParent = modified.replace(/\.[^\.]*$/,'');
-                    if(modified.split('.').length > 1){
-                       var newNode = newParent + '["' + modified.split('.')[modified.split('.').length-1] + '"]';
-                    }
-                    else{
-                       var newNode = modified;
-                    }
-                    if(!all) _this.remove(url);
-                    if(newParent.split('.').length > 1) _this.createNodes(newParent);
-                    _this.createNodes(modified);
-                    if(all){
-                       newNode = newNode.match(/\[\"\"\]/) ? '' : (newNode + '.');
-                       $.each(content, function(key, value){
-                          if(key[0] != attributeIdentifier) eval('_this.json.' + newNode + key + ' = value');
-                       });
-                       $.each(_this.find(url), function(key, value){
-                          if(key[0] != attributeIdentifier) _this.remove(url + '.' + key);
-                       });
-                    }
-                    else{
-                       eval('_this.json.' + newNode + ' = content');
-                    }
-                    if(_this.options.clearEmptyNodes){
-                       var parentNode = all ?  _this.find(url) : _this.find(url.replace(/\.[^\.]*$/, ''));
-                       var emptyNodes = true;
-                       $.each(parentNode, function(key, value){
-                          if(value instanceof Object){
-                             var children = 0;
-                             for (var i in value) children++;
-                             if(children > 1 || children == 1 && !_this.options.namespaces) return emptyNodes = false;
-                          }
-                          if(key[0] != attributeIdentifier) return emptyNodes = false;
-                       });
-                       if(emptyNodes){
-                          all ? _this.remove(url) : _this.remove(url.replace(/\.[^\.]*$/,''));
-                       }
-                    }
-                 }
-              });
-            }
-
-            // Create a all parts of a non existing node tree
-            this.createNodes = function(string){
-              var _this = this;
-              var node = this.get(string, false);
-              if(node) return;
-              (function checkNode(url, index){
-                 var current = url.split('.')[index];
-                 if(!current) return;
-                 var partUrl = [];
-                 for(var i=0; i<=index; i++){
-                    partUrl.push(url.split('.')[i]);
-                 }
-                 partUrl = partUrl.join('.');
-                 var part = _this.get(partUrl, false);
-                 if(!part) eval('_this.json.' + partUrl + '={}');
-                 checkNode(url, index+1);
-              })(string, 0);
-            }
-
-            // Get JSON by a full identifiable String splitted by '.'
-            this.get = function(path, log){
-              var _this = this,
-                    log = (log == false) ? false : true,
-                    target = this.json,
-                    path = path.replace(/^\./, ''),
-                    currentPath = '',
-                    tempPath = null;
-              (function select(index, log){
-                 tempPath = path.split('.')[index];
-                 if(tempPath){
-                    currentPath += index === 0 ? tempPath : ('.' + tempPath);
-                    target = tempPath.match(/\[*.\]$/) ? target[tempPath.split('[')[0]][tempPath.match(/\[([^\]]*)/)[1]] : target[tempPath];
-                    if(!target){
-                       if(log === true){
-                          path === currentPath ? _this.throwError('Invalid path ' + path) : _this.throwError('Invalid part "' + currentPath + '" in path "' + path + '"');
-                       }
-                       return target;
-                    }
-                    select(index+1, log);
-                 }
-              })(0, log);
-              return target;
-            }
-
-            // Find each JSON element by a given String splitted by '.' and additional conditions
-            this.find = function(path, condition){
-              var _this = this,
-                 parts = [];
-              // Get children from path
-              function children(root, path){
-                 var url = '',
-                    parts = [];
-                 $.each(path.split('.'), function(i){
-                    var tempParts = [];
-                    if(i == 0){
-                       url = this;
-                       tempParts = root;
-                    }
-                    else{
-                       url += '.' + this;
-                       if(this.match(/\[*.\]$/)){
-                          tempParts = parts[this.split('[')[0]][this.match(/\[*.\]$/)[0].replace(/[\[|\]]/g,'')];
-                       }
-                       else if(parts instanceof Array){
-                          var part = this;
-                          $.each(parts, function(){
-                             if(this instanceof Array){
-                                $.each(this, function(){
-                                   if(this[part] != undefined) tempParts.push(this[part]);
-                                });
-                             }
-                             else{
-                                if(this[part] != undefined) tempParts.push(this[part]);
-                             }
-                          });
-                       }
-                       else{
-                          tempParts = parts[this];
-                       }
-                    }
-                    if(!tempParts || tempParts.length == 0){
-                       _this.throwError('Invalid path ' + url);
-                       parts = [];
-                       return false;
-                    }
-                    else{
-                       parts = tempParts;
-                    }
-                 });
-                 return parts;
-              }
-              // Get object
-              if(path.split('.')[0].match(/\[*.\]$/)){
-                 var index = path.split('.')[0].match(/\[*.\]$/)[0].replace(/[\[|\]]/g, '');
-                 var root = this.json[path.split('.')[0].replace(/\[.*\]/, '')][index];
-              }
-              else{
-                 var root = this.json[path.split('.')[0]];
-              }
-              parts = children(root, path);
-              if(condition){
-                 // Define match function for condition
-                 function match(element, operator, rule){
-                    if(element && operator && rule){
-                       if(operator === '=~'){
-                          var options = '';
-                          if(rule.match(/^\/.*/) && rule.match(/\/.$/)){
-                             options = rule[rule.length - 1];
-                             rule = rule.substring(0, rule.length - 1);
-                          }
-                          rule = rule.replace(/^\//, '').replace(/\/$/, '');
-                          return (element.toString().match(new RegExp(rule, options))) ? true : false;
-                       }
-                       else{
-                          if(operator === '==' || operator === '!='){
-                             return (eval('element.toString()' + operator + 'rule')) ? true : false;
-                          }
-                          else{
-                             rule = parseInt(rule);
-                             element = parseInt(element);
-                             return (eval('element' + operator + 'rule')) ? true : false;
-                          }
-                       }
-                    }
-                 }
-                 var validParts = [],
-                    rule = condition.replace(/^.*(==|\>=|\<=|\>|\<|!=|=~)/, ''),
-                    subpath = condition.replace(/(==|\>=|\<=|\>|\<|!=|=~).*$/, '').replace(/\s$/, ''),
-                    operator = condition.replace(rule, '').replace(subpath, '').replace(/\s/, ''),
-                    element = subpath.split('.')[subpath.split('.').length-1];
-                 if(element === subpath) subpath = null;
-                 if(parts instanceof Array){
-                    if(!subpath){
-                       $.each(parts, function(){
-                          if(match(this[element], operator, rule)) validParts.push(this);
-                       });
-                    }
-                    else{          
-                       $.each(parts, function(){
-                          var currentChildren = children(this, '.' + subpath),
-                             part = this;
-                          if(currentChildren instanceof Array){
-                             $.each(currentChildren, function(){
-                                if(match(this, operator, rule)){
-                                   validParts.push(part);
-                                   return false;
-                                }
-                             });
-                          }
-                          else{
-                             if(match(currentChildren, operator, rule)){
-                                validParts.push(this);
-                             }
-                          }
-                       });
-                    }
-                    parts = validParts;
-                 }
-                 else{
-                    if(!subpath){
-                       if(!match(parts[element], operator, rule)){
-                          parts = null;
-                       }
-                    }
-                    else{
-                       var currentChildren = children(parts, '.' + subpath);
-                       var currentChildren = children(parts, '.' + subpath),
-                          valid = false;
-                       if(currentChildren instanceof Array){
-                          $.each(currentChildren, function(){
-                             if(match(this, operator, rule)){
-                                valid = true;
-                                return false;
-                             }
-                          });
-                       }
-                       else{
-                          if(match(currentChildren, operator, rule)) valid = true;
-                       }
-                       parts = valid ? parts : null;
-                    }
-                 }
-              }
-              return (!parts) ? [] : parts;
-            }
-
-            // Remove JSON by a given String splitted by '.'
-            this.remove = function(string){
-              if(this.get(string)){
-                 eval('delete this.json.' + string);
-                 if(string.match(/\[*.\]$/)){
-                    var _this = this;
-                    //var filterNull = obj.filter(undefined);
-                    var filterNull = $.grep(eval('_this.json.' + string.replace(/\[*.\]$/, '')), function(n,i){
-                       return(n);
-                    });
-                    eval('_this.json.' + string.replace(/\[*.\]$/, '') + ' = filterNull');
-                 }
-              }
-            }
-
-            // Detect type for string values of true, false, integer and null 
-            this.detectTypes = function(string){
-              if(string.match(/^true$/i)){
-                 return true
-              }
-              else if(string.match(/^false$/i)){
-                 return false;
-              }
-              else if(string.match(/^null|NaN|nil|undefined$/i)){
-                 return null;
-              }
-              else if(string.match(/^[0-9]*$/i)){
-                 return parseInt(string);
-              }
-              else{
-                 return string;
-              }
-            }
-
-            // Log specific error message
-            this.throwError = function(msg){
-              if(this.options.log){
-                 if(!window.console){
-                    // Add log method to window.console
-                    window.console = {
-                       log : function(s){ alert(s); }
-                 };
-              }
-             }
-            }
-
-           // Initialize
-           this.init();
-        };
+        $.XMLtoJSON = function(q){this.init=function(){this.document=this.xml=!1;this.json={};this.duration=new Date;this.options=$.extend({url:!1,xmlString:!1,namespaces:!1,valueIdentifier:"$",attributeIdentifier:"_",emptyValuesAsNull:!1,modify:{},clearEmptyNodes:!1,cache:!1,detectTypes:!1,filter:null,fallback:null,log:!1},q);this.options.url&&this.receiveXML();this.options.xmlString&&(this.xml=this.options.xmlString);this.xml&&(this.parseXML(),this.convertXML(),null!=this.options.fallback&&(this.json=={}|| this.json.parsererror)&&this.options.fallback({message:"XML is invalid",code:500}),this.modifyJSON());this.duration=new Date-this.duration+" ms"};this.receiveXML=function(){var a;$.ajax({type:"GET",url:this.options.url,async:!1,dataType:"text",cache:this.options.cache,complete:function(j){j.responseText&&(a=j.responseText.replace(/^\s+/,""))}});a?this.xml=a:(this.throwError("Cannot receive XML from "+this.options.url),null!=this.options.fallback&&this.options.fallback({message:"Cannot receive XML from "+ this.options.url,code:404}))};this.parseXML=function(){this.xml=this.xml.replace(/^[\s\n\r\t]*[<][\?][xml][^<^>]*[\?][>]/,"");window.ActiveXObject?(this.document=new ActiveXObject("Microsoft.XMLDOM"),this.document.async=!1,this.document.loadXML(this.xml)):(this.document=new DOMParser,this.document=this.document.parseFromString(this.xml,"application/xml"));(!this.xml||!this.document)&&this.throwError("Cannot parse XML")};this.convertXML=function(){var a=this;(function g(c,b,d,h){var e=d.valueIdentifier, f=d.attributeIdentifier;if(9===c.nodeType)$.each(c.childNodes,function(){g(this,b,d,h)});else if(1===c.nodeType){var m=h[e]?{valueIdentifier:!0}:{},k=c.nodeName,n=!0==d.namespaces?!0:!1,l={};-1!=k.indexOf(":")&&(m[k.substr(0,k.indexOf(":"))]=!0);$.each(c.attributes,function(){var b=this.nodeName,c=this.nodeValue;a.options.filter&&(c=a.options.filter(c));a.options.detectTypes&&(c=a.detectTypes(c));"xmlns"===b?(h[e]=c,m[e]=!0):0===b.indexOf("xmlns:")?h[b.substr(b.indexOf(":")+1)]=c:-1!=b.indexOf(":")? (l[f+b]=c,m[b.substr(0,b.indexOf(":"))]=!0):l[f+b]=a.options.emptyValuesAsNull&&(""===c||null===c)?null:c});var p=n?h:m;$.each(p,function(a,b){p.hasOwnProperty(a)&&(l[f+"xmlns"]=l[f+"xmlns"]||{},l[f+"xmlns"][a]=b)});b[k]instanceof Array?b[k].push(l):b[k]=b[k]instanceof Object?[b[k],l]:l;a.options.emptyValuesAsNull&&0==c.childNodes.length&&(b[k]=null);$.each(c.childNodes,function(){g(this,l,d,h)})}else 3===c.nodeType&&(c=c.nodeValue,c.match(/[\S]+/)&&(a.options.filter&&(c=a.options.filter(c)),a.options.detectTypes&& (c=a.detectTypes(c)),b[e]instanceof Array?b[e].push(c):b[e]=b[e]instanceof Object?[b[e],c]:c))})(this.document,this.json,this.options,{})};this.modifyJSON=function(){var a=this,j=this.options.attributeIdentifier;$.each(this.options.modify,function(g,c){var b=g.match(/\.\*$/)?!0:!1;g=b?g.replace(/\.\*$/,""):g;var d=a.find(g);if(d){var h=c.replace(/\.[^\.]*$/,""),e=1<c.split(".").length?h+'["'+c.split(".")[c.split(".").length-1]+'"]':c;b||a.remove(g);1<h.split(".").length&&a.createNodes(h);a.createNodes(c); b?(e=e.match(/\[\"\"\]/)?"":e+".",$.each(d,function(a){a[0]!=j&&eval("_this.json."+e+a+" = value")}),$.each(a.find(g),function(b){b[0]!=j&&a.remove(g+"."+b)})):eval("_this.json."+e+" = content");if(a.options.clearEmptyNodes){var d=b?a.find(g):a.find(g.replace(/\.[^\.]*$/,"")),f=!0;$.each(d,function(b,c){if(c instanceof Object){var d=0,e;for(e in c)d++;if(1<d||1==d&&!a.options.namespaces)return f=!1}if(b[0]!=j)return f=!1});f&&(b?a.remove(g):a.remove(g.replace(/\.[^\.]*$/,"")))}}})};this.createNodes= function(a){var j=this;this.get(a,!1)||function c(a,d){if(a.split(".")[d]){for(var h=[],e=0;e<=d;e++)h.push(a.split(".")[e]);h=h.join(".");j.get(h,!1)||eval("_this.json."+h+"={}");c(a,d+1)}}(a,0)};this.get=function(a,j){var g=this;j=!1==j?!1:!0;var c=this.json;a=a.replace(/^\./,"");var b="",d=null;(function e(f,j){if(d=a.split(".")[f]){b+=0===f?d:"."+d;c=d.match(/\[*.\]$/)?c[d.split("[")[0]][d.match(/\[([^\]]*)/)[1]]:c[d];if(!c)return!0===j&&(a===b?g.throwError("Invalid path "+a):g.throwError('Invalid part "'+ b+'" in path "'+a+'"')),c;e(f+1,j)}})(0,j);return c};this.find=function(a,j){function g(a,b){var d="",e=[];$.each(b.split("."),function(b){var f=[];if(0==b)d=this,f=a;else if(d+="."+this,this.match(/\[*.\]$/))f=e[this.split("[")[0]][this.match(/\[*.\]$/)[0].replace(/[\[|\]]/g,"")];else if(e instanceof Array){var g=this;$.each(e,function(){this instanceof Array?$.each(this,function(){void 0!=this[g]&&f.push(this[g])}):void 0!=this[g]&&f.push(this[g])})}else f=e[this];if(!f||0==f.length)return c.throwError("Invalid path "+ d),e=[],!1;e=f});return e}var c=this,b=[];a.split(".")[0].match(/\[*.\]$/)?(b=a.split(".")[0].match(/\[*.\]$/)[0].replace(/[\[|\]]/g,""),b=this.json[a.split(".")[0].replace(/\[.*\]/,"")][b]):b=this.json[a.split(".")[0]];b=g(b,a);if(j){var d=function(a,b,c){if(a&&b&&c){if("=~"===b)return b="",c.match(/^\/.*/)&&c.match(/\/.$/)&&(b=c[c.length-1],c=c.substring(0,c.length-1)),c=c.replace(/^\//,"").replace(/\/$/,""),a.toString().match(RegExp(c,b))?!0:!1;if("=="===b||"!="===b)return eval("element.toString()"+ b+"rule")?!0:!1;parseInt(c);parseInt(a);return eval("element"+b+"rule")?!0:!1}},h=[],e=j.replace(/^.*(==|\>=|\<=|\>|\<|!=|=~)/,""),f=j.replace(/(==|\>=|\<=|\>|\<|!=|=~).*$/,"").replace(/\s$/,""),m=j.replace(e,"").replace(f,"").replace(/\s/,""),k=f.split(".")[f.split(".").length-1];k===f&&(f=null);if(b instanceof Array)f?$.each(b,function(){var a=g(this,"."+f),b=this;a instanceof Array?$.each(a,function(){if(d(this,m,e))return h.push(b),!1}):d(a,m,e)&&h.push(this)}):$.each(b,function(){d(this[k],m, e)&&h.push(this)}),b=h;else if(f){var n=g(b,"."+f),n=g(b,"."+f),l=!1;n instanceof Array?$.each(n,function(){if(d(this,m,e))return l=!0,!1}):d(n,m,e)&&(l=!0);b=l?b:null}else d(b[k],m,e)||(b=null)}return!b?[]:b};this.remove=function(a){this.get(a)&&(eval("delete this.json."+a),a.match(/\[*.\]$/)&&($.grep(eval("_this.json."+a.replace(/\[*.\]$/,"")),function(a){return a}),eval("_this.json."+a.replace(/\[*.\]$/,"")+" = filterNull")))};this.detectTypes=function(a){return a.match(/^true$/i)?!0:a.match(/^false$/i)? !1:a.match(/^null|NaN|nil|undefined$/i)?null:a.match(/^[0-9]*$/i)?parseInt(a):a};this.throwError=function(){this.options.log&&!window.console&&(window.console={log:function(a){alert(a)}})};this.init()};
 
     }()),
     trim = $.trim,
@@ -803,7 +320,6 @@
                     zip : /^\d{5}([\-]\d{4})?$/
                 };
 
-
                 return function ( val, regex ) {
                     return lib.hasOwnProperty(trim(regex)) ? lib[regex].test(val) : false;
                 };  
@@ -811,13 +327,9 @@
     	},
 
     	Bank : (function(){
-    		var 
-    		bank = {
-
-    		};
+    		var bank = {};
 
     		return {
-
     			add : function ( modID, k, v ) {
     				modID = trim( modID.slice( modID.indexOf("/") + 1 ) );
     				if ( !bank[ modID ] ) bank[ modID ] = {};
@@ -936,8 +448,8 @@
             
             //:::::::::::::::::::::::::
             config : {
-                "lat" : "_lat",
-                "lng" : "_lng"
+                lat : "_lat",
+                lng : "_lng"
             },
             //:::::::::::::::::::::::::
 
@@ -953,19 +465,16 @@
 
                 addCoords : function () {
                     var 
-                    locData = K.LOC_DATA, self = this,
-                    i, len, lat, lng;
+                    self   = this, 
+                    config = self.config,
+                    lat    = config.lat, 
+                    lng    = config.lng;
 
-                    i   = 0;
-                    len = locData.length;
-                    for ( ; i < len; i += 1 ) {
-                        lat = locData[i][self.config.lat];
-                        lng = locData[i][self.config.lng];
-
-                        if ( !lat || !lng ) continue;
-
-                        locData[i].GLatLng = new google.maps.LatLng( lat, lng );
-                    }
+                    _.each( K.LOC_DATA, function( o ) {
+                    	if ( o[lng] && o[lng] ) {
+                    		o.GLatLng = new google.maps.LatLng( o[lat], o[lng] );
+                    	}
+                    });
                 }
             }
         });
@@ -975,14 +484,11 @@
 		//::::::::::::::::::::::::::::::::::::::::
         //:::::::::::: UI FEATURES
         
+        //:: DYNAMIC ZOOM
         __M({
-        	ns : NS.features,
+        	ns   : NS.features,
         	name : "DYNAMIC_ZOOM",
-        	use : true,
-
-        	config : {
-
-        	},
+        	use  : true,
 
         	module : {
 
@@ -992,21 +498,15 @@
         		},
 
         		updateZoom : function ( hideFlag ) {
-        			var
-        			bounds  = new google.maps.LatLngBounds(),
-        			locData = Kernel.LOC_DATA,
-        			i, len;
+        			var bounds  = new google.maps.LatLngBounds();
 
-        			i   = 0;
-        			len = locData.length;
-        			for ( ; i < len; i += 1 ) {
-        				if ( !locData[i][ hideFlag ] ) {
-        					bounds.extend( locData[i].marker.getPosition() );
+        			_.each( Kernel.LOC_DATA, function( o ) {
+        				if ( !o[ hideFlag ] ) {
+        					bounds.extend( o.marker.getPosition() );
         				}
-        			}
+        			});
 
         			Kernel.GMAP.fitBounds( bounds );	
-
         		}
 
         	}
@@ -1022,10 +522,9 @@
             
             //:::::::::::::::::::::::::
             config : {
-                file : "templates.html",
+                file       : "templates.html",
                 tmplNodeId : "infoWindows",
-                userEvent : "click" // click or mouseover
-
+                userEvent  : "click" // click or mouseover
             },
             //:::::::::::::::::::::::::
 
@@ -1035,39 +534,37 @@
                     var self = this;
 
                     self.hub.listen( MSGS.markers_loaded, function () {
+
                         self.GMAPInfoWindow = new google.maps.InfoWindow();
                         self.template = K.TEMPLATES[ trim(self.config.tmplNodeId) ];
-                        if ( !self.template ) return;
-                        self.buildInfoWindowViews();
+
+                        if ( self.template ) self.buildInfoWindowViews();
 
                     });
                 },
 
                 buildInfoWindowViews : function  () {
                     var
-                    self = this,
-                    template  = _.template( self.template ),
-                    LOC_DATA = K.LOC_DATA,
-                    i, len;
+                    self     = this,
+                    template = _.template( self.template );
 
-                    i   = 0;
-                    len = LOC_DATA.length;
-                    for ( ; i < len; i += 1 ) {
-                        LOC_DATA[i].infoWindow = $( template({ data : LOC_DATA[i] }) )[0];
+                    _.each( K.LOC_DATA, function( o ) {
+                    	o.infoWindow = $( template({ data : o }) )[0];
 
-                        self.createMarkerEvent({
-                            marker : LOC_DATA[i].marker,
-                            infoWindow : LOC_DATA[i].infoWindow 
+                    	self.createMarkerEvent({
+                            marker     : o.marker,
+                            infoWindow : o.infoWindow 
                         });
-                    }
+                    });
                 },
 
                 createMarkerEvent : function ( o ) {
                     var self = this;
+                    google.maps.event.addListener( o.marker, self.config.userEvent, function() {
 
-                    google.maps.event.addListener(o.marker, self.config.userEvent, function() {
                         self.GMAPInfoWindow.setContent( o.infoWindow );
                         self.GMAPInfoWindow.open( K.GMAP, o.marker);
+
                     });
                 }
             }
@@ -1093,7 +590,7 @@
             				txtclr : "000000"
             			},
 
-            			img : "http://www.valvolineofflagstaff.com/images/map-icon.png"
+            			img : ""
             		},
 
             		locs : {
@@ -1105,10 +602,10 @@
             				txtclr : "FFFFFF"
             			},
 
-            			img : "http://www.valvolineofflagstaff.com/images/map-icon.png", 
+            			img : "", 
 
             			sorting  : {
-            				alpha : false,
+            				alpha : true,
             				numeric : false
             			}
             		}
@@ -1232,7 +729,8 @@
 
 		});
 
-
+	
+		//:: MARKER BUILDER
 		__M({
 			ns   : NS.loc_data,
             name : "MARKER_BUILD",
@@ -1257,7 +755,6 @@
             		var self = this;
 
             		if ( !Kernel.Bank.load( self.config.dpn, self ) ) return;
-            		// console.log( this.marker_styles );
 
             		self.hub.listen( MSGS.docready_markers, function ( bool ) {
                         self.onloadMarkers = bool;
@@ -1266,9 +763,7 @@
                     }); 
                     
                     self.hub.listen( MSGS.loc_data_sorted , function( hideFlag ) {
-
                         self.hideFlag = hideFlag;
-
                         self.buildLocPins();
                         self.updateMarkers();
                         self.loadUserMarker();
@@ -1283,40 +778,30 @@
 
                 buildLocPins : function () {
                		var 
-               		locData  = Kernel.LOC_DATA,
                		locStyle = this.marker_styles.locs,
-               		iconKey  = this.config.iconKey,
-               		i, len; 
+               		iconKey  = this.config.iconKey;
 
                		if ( typeof locStyle == "function" ) {
-               			locStyle( locData, iconKey );
+               			locStyle( K.LOC_DATA, iconKey );
                			return;	
                		}
 
                		if ( typeof locStyle === "string" ) {
-               			i   = 0;
-	               		len = locData.length;
-	               		for ( ; i < len; i += 1 ) {
-	               			locData[i][iconKey] = locStyle;
-	               		}
+               			_.each( K.LOC_DATA, function( o ) {
+               				o[iconKey] = locStyle;
+               			});
                		}
                	},
 
                	buildLocMarkers : function () {
-               		var 
-               		locData   = Kernel.LOC_DATA,
-               		markerKey = this.config.markerKey,
-               		i, len;
+               		var
+               		self      = this, 
+               		markerKey = this.config.markerKey;
 
-               		i   = 0;
-               		len = locData.length;
-               		for ( ; i < len; i += 1 ) {
-               			locData[i][ markerKey ] = this.makeGMarker( locData[i] );
-
-               			if ( !this.onloadMarkers ) {
-               				locData[i][ markerKey ].setMap( null );
-               			}
-               		}
+               		_.each( K.LOC_DATA, function( o ) {
+               			o[ markerKey ] = self.makeGMarker( o );
+               			if ( !self.onloadMarkers ) o[ markerKey ].setMap( null );
+               		});
                 },
 
                 makeGMarker : function ( o ) {
@@ -1329,27 +814,21 @@
 
             	updateMarkers : function () {
                     var
-                    self = this, 
-                    locObj, currObj,
-                    i, len, hideFlag,
-                    markerKey =  this.config.markerKey;
+                    self      = this, 
+                    markerKey = this.config.markerKey,
+                    hideFlag  = trim( self.hideFlag );
 
-                    hideFlag = trim( self.hideFlag );
-                    locObj   = K.LOC_DATA;
+                    _.each( K.LOC_DATA, function( o ) {
 
-                    i   = 0;
-                    len = locObj.length;
-                    for ( ; i < len; i += 1 ) {
-                        currObj = locObj[i];
-
-                        if ( currObj[ hideFlag ] ) {
-                            currObj[markerKey].setMap( null );
-                            continue;
+                    	if ( o[ hideFlag ] ) {
+                            o[ markerKey ].setMap( null );
+                            return;
                         }
 
-                        currObj[markerKey].setIcon( currObj[ this.config.iconKey ] );
-                        currObj[markerKey].setMap( K.GMAP );
-                    }
+                        o[markerKey].setIcon( o[ self.config.iconKey ] );
+                        o[markerKey].setMap( K.GMAP );
+
+                    });
 
                     return self;
                 },
@@ -1384,9 +863,6 @@
             }
 
 		});
-
-		
-
 		
 		//:: LIST VIEW FEATURE
         __M({
@@ -1395,8 +871,8 @@
             use  : true,
 
             config : {
-                tmplNodeId : "locationList",
-                listRootNode : "#locationList",
+                tmplNodeId     : "locationList",
+                listRootNode   : "#locationList",
                 loadListOnload : false
             },
 
@@ -1434,23 +910,17 @@
 
                 buildViews : function ( hideFlag ) {
                     var
-                    self = this,
-                    template  = _.template( self.template ),
-                    LOC_DATA = K.LOC_DATA,
-                    i, len;
+                    self     = this,
+                    template = _.template( self.template );
 
                     self.fullListView = "";
                     self.config.listRootNode.empty();
 
-                    i   = 0;
-                    len = LOC_DATA.length;
-                    for ( ; i < len; i += 1 ) {
-                        LOC_DATA[i].listView = template({ data : LOC_DATA[i] });
+                    _.each( K.LOC_DATA, function( o ) {
+                    	o.listView = template({ data : o });
+                    	if ( !o[ hideFlag ] ) self.fullListView += o.listView;
+                    });
 
-                        if ( !LOC_DATA[i][ hideFlag ] ) {
-                            self.fullListView += LOC_DATA[i].listView;
-                        }
-                    }
                 },
 
                 render : function () {
@@ -1507,30 +977,26 @@
                 bindEvents : function () {
                     var
                     self   = this,
-                    nodes  = self.config.nodes,
                     isNode = K.Util.isNode,
-                    events = self.events,
-                    prop;
+                    events = self.events;
 
-                    for ( prop in nodes ) {
-                        prop = trim( prop );
+                    _.each( self.config.nodes, function( v, k, nodes ) {
+                    	k = trim( k );
 
-                        if ( !events.hasOwnProperty( prop ) ) return false;
+                    	if ( !_.has( events, k ) ) return;
 
-                        nodes[prop] = $( nodes[prop] );
+                    	nodes[ k ] = $( v );
+                    	if ( !isNode( nodes[ k ] ) ) return;
 
-                        if ( !isNode( nodes[prop] ) ) return false;
+                    	events[ k ].call( nodes[ k ], events );
+                    });
 
-                        events[prop].call( nodes[prop], events );
-                    }
-
-                    return true;
                 },
 
                 events : function () {
-                    var self     = this,
-	                    config   = self.config,
-	                    errClass = config.errClass,
+                    var self        = this,
+	                    config      = self.config,
+	                    errClass    = config.errClass,
 	                    placeholder = config.placeholder;
 
                     userHitEnter = function ( e ) {
@@ -1556,10 +1022,10 @@
                             this.on({
 
                                 keyup : function ( e ) {
-                                    var $this = $(this);
-                                    if ( $this.hasClass(errClass) && !userHitEnter( e ) ) {
+                                    var $this = $( this );
+                                    if ( $this.hasClass( errClass ) && !userHitEnter( e ) ) {
                                     	$this
-										.removeClass(errClass)
+										.removeClass( errClass )
 										.val( code2Char( e.keyCode ) );
 										errCSS( $this, false );
                                     }
@@ -1582,7 +1048,7 @@
                                 },
 
                                 focusout : function () {
-                                	var $this = $(this), val = $this.val();			
+                                	var $this = $( this ), val = $this.val();			
 									if ( val.length < 1 ) $this.val( placeholder ).data("placeholder", true);
 									else $this.data("placeholder", false);
                                 },
@@ -1625,7 +1091,6 @@
 
         //:: RADIUS MODEL
         __M({
-
             ns   : NS.geo,
             name : "RADIUS",
             use  : ydlMapConfig.model.RADIUS,
@@ -1637,12 +1102,17 @@
 
                 messages : {
                     searchError : "Invalid Search Term",
-                    noResults : "No Results",
+                    noResults   : "No Results",
                     placeholder : "Enter Search Term"
                 },
 
                 styles : {
                 	error : "red"
+                },
+
+                coordKeys : {
+                	lat : "_lat",
+                	lng : "_lng"
                 }
             },
 
@@ -1665,7 +1135,7 @@
                             errColor : self.config.styles.error
                         });
 
-                        self.hub.listen( MSGS.user_search_request, self.geoCodeSearch); 
+                        self.hub.listen( MSGS.user_search_request, self.geoCodeSearch);
 
                     });
                 },
@@ -1710,22 +1180,14 @@
                 },
 
                 flagOutOfBoundsLocs : function () {
-                    var 
-                    self = this,
-                    locData = K.LOC_DATA,
-                    i, len, currLoc;
-
+                    var self = this;
+    
                     self.hiddenLocs = 0;
 
-                    i   = 0;
-                    len = locData.length;
-                    for ( ; i < len; i += 1 ) {
-                        currLoc = locData[i];
-                        currLoc[ self.config.hideFlag ] = self.checkRadius( currLoc );
-
-                        if ( currLoc[ self.config.hideFlag ] ) self.hiddenLocs += 1;
-
-                    }
+                    _.each( K.LOC_DATA, function( o ) {
+                    	o[ self.config.hideFlag ] = self.checkRadius( o );
+                    	if ( o[ self.config.hideFlag ] ) self.hiddenLocs += 1;
+                    });
 
                     return self;
                 },
@@ -1737,11 +1199,15 @@
 
                 computeDistances : function () {
                     var
-                    self        = this,
+                    self        = this, 
+                    config      = self.config,
                     locData     = K.LOC_DATA,
-                    userCoords  = K.USER_COORDS, 
+                    userCoords  = K.USER_COORDS,
 
-                    i, len, currLoc, haversineObj;
+                    haversineObj,
+
+                    lat = config.coordKeys.lat,
+                    lng = config.coordKeys.lng,
 
                     haversineObj = {
                         unit : self.config.haversineUnit,
@@ -1751,20 +1217,19 @@
                         }
                     };
 
-                    i   = 0;
-                    len = locData.length;
-                    for ( ; i < len; i += 1 ) {
-                        currLoc = locData[i];
+                    _.each( K.LOC_DATA, function( o ) {
 
-                        if ( !currLoc._lat || !currLoc._lng ) continue;
+                    	if ( o[ lat ] && o[ lng ] ) {
 
-                        haversineObj.to = {
-                            lat : currLoc._lat,
-                            lng : currLoc._lng
-                        };
+                    		haversineObj.to = {
+	                            lat : o[ lat ],
+	                            lng : o[ lng ]
+	                        };
 
-                        currLoc[ self.config.distanceKey ] = K.Util.haversine( haversineObj ).toFixed(2);
-                    }
+	                        o[ self.config.distanceKey ] = K.Util.haversine( haversineObj ).toFixed(2);
+                    	}
+
+                    });
 
                     return self;
                 },
@@ -1784,7 +1249,6 @@
                 },
 
                 complete : function () {
-
                     this.hub.broadcast( MSGS.loc_data_sorted, this.config.hideFlag );
                     return this;
                 }
@@ -1806,10 +1270,15 @@
 
                 hideFlag : "hide",
 
+                searchType : {
+                	zip    : true,
+                	postal : false
+                },
+
                 messages : {
-                    searchError : "Invalid Zip",
+                    searchError : "Invalid Zip/Postal",
                     noResults   : "No Results",
-                    placeholder : "Enter your zip"
+                    placeholder : "Enter Your Zip/Postal"
                 }
 
             },
@@ -1819,7 +1288,6 @@
 
                 init : function () {
                     var self = this;
-
 
                     self.hub.listen( MSGS.gmap_dom_ready, function() {
 
@@ -1832,6 +1300,9 @@
                         });
 
                         self.hub.listen( MSGS.user_search_request, function( userSearch ) {
+
+                        	// self.userSearch = trim( userSearch );
+
                             self.userZip = trim( userSearch );
 
                             if ( !self.checkZip() ) {
@@ -2080,7 +1551,7 @@
         //:::::::::::: Templates Module
 
 
-        //:: API LOADER
+        //:: TEMPLATE LOADER
         __M({
             ns   : NS.templates,
             name : "LOAD",
