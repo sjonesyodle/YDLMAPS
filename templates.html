@@ -8,13 +8,12 @@
             <span>{{ data._state || "" }}, </span>
             <span>{{ data._zip || "" }}</span><br />
             <span>{{ data._phone || "" }}</span><br />
+            <a href=""><img src='{{ data.icon || "" }}' /></a><br />
             <span>{{ data.distance ? "Distance : " + data.distance + " miles" : "" }}</span>
         </p>
     </div>
 
 </script>
-
-
 
 <script id="infoWindows" type="text/template">
 

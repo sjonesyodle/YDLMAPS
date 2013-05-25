@@ -45,7 +45,7 @@
 
     }()),
     trim = $.trim,
-    K = Kernel, __M, __C, appify;
+    K = Kernel, __M, appify;
 
     K.extend(K, {
 
@@ -119,32 +119,6 @@
                 return ret;
             } 
         },
-
-        LOC_DATA : { },
-
-        USER_COORDS : { },
-
-        TEMPLATES : { },
-
-        mapModel : function () {
-            var locData = K.LOC_DATA;
-
-            if ( !locData || $.isEmptyObject( locData  ) ) return;
-
-            // radius model
-            if ( locData.locations && locData.locations.location ) {
-                K.LOC_DATA = locData.locations.location;
-                return;
-            }
-
-            // territory model
-            if ( locData.serviceAreas && locData.serviceAreas.serviceArea ) {
-                K.LOC_DATA = locData.serviceAreas.serviceArea;
-                return;
-            }
-        },
-
-        GMAP : { },
 
     	Util : {
 
@@ -353,12 +327,33 @@
 
     		};
 
-    	}())
+    	}()),
 
+    	mapModel : function () {
+            var locData = K.LOC_DATA;
+
+            if ( !locData || $.isEmptyObject( locData  ) ) return;
+
+            // radius model
+            if ( locData.locations && locData.locations.location ) {
+                K.LOC_DATA = locData.locations.location;
+                return;
+            }
+
+            // territory model
+            if ( locData.serviceAreas && locData.serviceAreas.serviceArea ) {
+                K.LOC_DATA = locData.serviceAreas.serviceArea;
+                return;
+            }
+        },
+
+    	LOC_DATA    : { },
+        USER_COORDS : { },
+        TEMPLATES   : { },
+        GMAP        : { }
     });
 
 	__M = K.Builder.defineMod;
-    __C = K.Builder.addModConfig;
 	appify = K.Builder.appify;
 
 
@@ -602,8 +597,8 @@
             			img : "", 
 
             			sorting  : {
-            				alpha : true,
-            				numeric : false
+            				alpha : false,
+            				numeric : true
             			}
             		}
             	},
