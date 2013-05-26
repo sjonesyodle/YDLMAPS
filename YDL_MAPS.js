@@ -366,7 +366,7 @@
         //::::::::::::::::::
         //:::::: NAMESPACES
         NS = appify(APP, [
-            "loc_data",
+            "LOC_DATA",
             "geo",
             "gmaps",
             "templates",
@@ -379,26 +379,19 @@
             "gmap_api_loaded",
             "gmap_config_ready",
             "gmap_dom_ready",
-
             "loc_data_ready",
             "loc_coords_ready",
-
             "new_user_search",
             "user_search_update",
             "user_search_request",
             "loc_data_sorted",
             "docready_loclist",
-
             "search_model_ready",
             "user_search_response",
-
             "markers_loaded",
             "docready_markers",
-
             "load_info_windows",
-
             "viewport_changed",
-
             "templates_loaded"
         ]);
 
@@ -408,7 +401,7 @@
 
         // :: LOAD LOC DATA
         __M({
-            ns   : NS.loc_data,
+            ns   : NS.LOC_DATA,
             name : "LOAD",
             use  : true,
                 
@@ -419,12 +412,10 @@
             module : {
 
                 init : function () {
-                    if ( this.config.file ) this.load();
-                },
-
-                load : function () {
-                    K.LOC_DATA = K.Util.xml2json( this.config.file ).json;
-                    K.mapModel();
+                    if ( this.config.file ) {
+                    	K.LOC_DATA = K.Util.xml2json( this.config.file ).json;
+	                    K.mapModel();
+                    }
                 }
 
             }
@@ -433,7 +424,7 @@
 
         //:: GEO CODE LOCS DATA
         __M({
-            ns   : NS.loc_data,
+            ns   : NS.LOC_DATA,
             name : "COORDS",
             use  : true,
             
@@ -505,7 +496,7 @@
 
         //:: INFO WINDOWS FEATURE
         __M({
-            ns   : NS.loc_data,
+            ns   : NS.LOC_DATA,
             name : "INFO_WINDOWS",
             use  : true,
             
@@ -561,7 +552,7 @@
 		
 		//:: MARKER STYLES
 		__M({
-			ns   : NS.loc_data,
+			ns   : NS.LOC_DATA,
             name : "MARKER_STYLES",
             use  : true,
 
@@ -703,7 +694,7 @@
 	
 		//:: MARKER BUILDER
 		__M({
-			ns   : NS.loc_data,
+			ns   : NS.LOC_DATA,
             name : "MARKER_BUILD",
             use  : true,
 
@@ -837,7 +828,7 @@
 		
 		//:: LIST VIEW FEATURE
         __M({
-            ns   : NS.loc_data,
+            ns   : NS.LOC_DATA,
             name : "LIST_VIEW",
             use  : true,
 
@@ -1143,8 +1134,7 @@
 
                 checkRadius : function ( o ) {
                     var distKey = this.config.distanceKey;
-                    if ( !o[ distKey ] ) return false;
-                    return this.config.boundary < parseInt(o[ distKey ], 10);
+                    return o[ distKey ] ? this.config.boundary < parseInt(o[ distKey ], 10) : false;
                 },
 
                 flagOutOfBoundsLocs : function () {
@@ -1167,9 +1157,8 @@
 
                 computeDistances : function () {
                     var
-                    _I        = this, 
+                    _I          = this,
                     config      = _I.config,
-                    locData     = K.LOC_DATA,
                     userCoords  = K.USER_COORDS,
 
                     haversineObj,
@@ -1203,13 +1192,10 @@
                 },
 
                 locsFound : function () {
-                    var _I = this;
-
-                    if ( _I.hiddenLocs === K.LOC_DATA.length ) {
-                        _I.triggerError( _I.config.messages.noResults ); 
+                    if ( this.hiddenLocs === K.LOC_DATA.length ) {
+                        this.triggerError( this.config.messages.noResults ); 
                     }
-
-                    return _I;
+                    return this;
                 },
 
                 triggerError : function ( msg ) {
@@ -1393,14 +1379,13 @@
                 },
 
                 build : function ( config ) {
-                    var node;
+                    var node = $( this.config.mapNode );
 
-                    node = $( this.config.mapNode );
-                    if ( !K.Util.isNode( node ) ) return false;
-
-                    this.config.mapNode = node[0];
-                    this.mapConfig      = config; 
-                    this.loadMap();
+                    if ( K.Util.isNode( node ) ) {
+                    	this.config.mapNode = node[0];
+	                    this.mapConfig      = config; 
+	                    this.loadMap();
+                    }
                 },
 
                 loadMap : function () {
@@ -1439,21 +1424,15 @@
                 },
 
                 build : function () {
-                    var 
-                    config = {},
-                    prop;
+                	var buildConfig = this.buildConfig;
 
-                    for ( prop in this.config ) {
-                        if ( this.buildSettings.hasOwnProperty( prop ) ) {
-                            config[prop] = this.buildSettings[prop]( this.config[prop] );
-                        }
-                        else config[prop] = this.config[prop];
-                    }
+                	_.each( this.config, function( v, k, o ){
+                		if ( buildConfig[ k ] ) o[ k ] = buildConfig[ k ]( v );
+                	});
 
-                    this.config = config;
                 },
 
-                buildSettings : {
+                buildConfig : {
 
                     center : function ( coords ) {
                         return coords ? new google.maps.LatLng(coords.lat, coords.lng) : undefined;
@@ -1506,7 +1485,6 @@
         //::::::::::::::::::::::::::::::::::::::::
         //:::::::::::: Templates Module
 
-
         //:: TEMPLATE LOADER
         __M({
             ns   : NS.templates,
@@ -1520,10 +1498,6 @@
             module : {
 
                 init : function () {
-                    this.load();
-                },
-
-                load : function () {
                     K.Util.ajax({
                     	type    : "GET",
                         url     : trim( this.config.file ),
