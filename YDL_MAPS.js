@@ -357,6 +357,7 @@
 	appify = K.Builder.appify;
 
 
+	// - METRO APP -
     ;(function(){
     	var APP, NS, MSGS;
 
@@ -411,11 +412,9 @@
             name : "LOAD",
             use  : true,
                 
-            //:::::::::::::::::::::::::    
             config : {
                 file : "locations.xml"
             },
-            //::::::::::::::::::::::::: 
 
             module : {
 
@@ -438,12 +437,10 @@
             name : "COORDS",
             use  : true,
             
-            //:::::::::::::::::::::::::
             config : {
                 lat : "_lat",
                 lng : "_lng"
             },
-            //:::::::::::::::::::::::::
 
             module : {
 
@@ -512,13 +509,11 @@
             name : "INFO_WINDOWS",
             use  : true,
             
-            //:::::::::::::::::::::::::
             config : {
                 file       : "templates.html",
                 tmplNodeId : "infoWindows",
                 userEvent  : "click" // click or mouseover
             },
-            //:::::::::::::::::::::::::
 
             module : {
 
@@ -643,92 +638,53 @@
 
             	locMarkers : function () {
             		var
-            		_I = this,
-
-            		// sortFuncs = (function(){
-            		// 	var 
-            		// 	alphabet = "abcdefghijklmnopqrstuvwxyz".split(""),
-            		// 	locs     = _I.config.markers.locs,
-
-            		// 	sort = function () {
-
-            		// 	};
-
-            		// 	return {
-            		// 		alpha   : function ( locArr, updateProp ) {
-
-            		// 		},
-            		// 		numeric : function ( locArr, updateProp ) {
-
-            		// 		}
-            		// 	};
-
-            		// }()),
-
-
+            		_I        = this,
+            		alphabet  = "abcdefghijklmnopqrstuvwxyz".split(""),
+            		markers   = _I.config.markers,
+            		locsCfg   = markers.locs,
             		sortFuncs = {
-            			alpha : (function( locs ){
-            				var alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
+        				alpha : function ( locList, updateProp ) {
+        					_.each( locList, function( loc, i ){
+        						loc[ updateProp ] = _I.buildHex( locsCfg, alphabet[ i ] );
+        					});
+        				},
 
-            				return function ( locArr, updateProp ) {
-	            				var i, len, currLoc, style;
-
-	            				i   = 0;
-	            				len = locArr.length;
-	            				for ( ; i < len; i += 1 ) {
-	            					currLoc = locArr[i];
-	            					currLoc[ updateProp ] = _I.buildHex( locs, alphabet[i] );
-	            				}	
-	            			};
-            			}( _I.config.markers.locs )),
-
-            			numeric : (function( locs ){
-
-	            			return function ( locArr, updateProp ) {
-	            				var i, len, currLoc, style;
-
-	            				i   = 0;
-	            				len = locArr.length;
-	            				for ( ; i < len; i += 1 ) {
-	            					currLoc = locArr[i];
-	            					currLoc[ updateProp ] = _I.buildHex( locs, (i+1).toString());
-	            				}	
-	            			}
-	            		}( _I.config.markers.locs ))
+        				numeric : function ( locList, updateProp ) {
+        					_.each( locList, function( loc, i ){
+        						loc[ updateProp ] = _I.buildHex( locsCfg, ( i + 1 ).toString() );
+        					});
+        				}
             		},
-            		
-            		style,
-            		cfg = this.config.markers.locs;
 
-            		cfg.use = trim( cfg.use );
+            		sorting,
+            		use = locsCfg.use ? trim( locsCfg.use ) : null; 
 
-            		//def
-            		if ( !cfg.use || !cfg.hasOwnProperty( cfg.use ) ) {
-            			this.config.markers.locs = this.buildMap["def"]( cfg );
+            		// def
+            		if ( !use ) {
+            			markers.locs = this.buildMap["def"]( locsCfg );
             			return;
             		}
 
-            		//img
-            		if ( cfg.use === "img" ) {
-            			this.config.markers.locs = this.buildMap[ cfg.use ]( cfg );
+            		// img
+            		if ( use === "img" ) {
+            			markers.locs = this.buildMap[ use ]( locsCfg );
             			return;
             		}	
 
             		// return sort method
-            		cfg.sorting = K.Util.hasBoolProp( cfg.sorting, true, true );
-            		if ( cfg.sorting && sortFuncs.hasOwnProperty( cfg.sorting ) ) {
-            			this.config.markers.locs = sortFuncs[ cfg.sorting ];
+            		sorting = K.Util.hasBoolProp( locsCfg.sorting, true, true );
+            		if ( sorting && sortFuncs[ sorting ] ) {
+            			markers.locs = sortFuncs[ sorting ];
             			return;
             		}
 
             		//basic hex
-            		this.config.markers.locs = this.buildMap[ trim( cfg.use ) ]( cfg );
+            		markers.locs = this.buildMap[ trim( use ) ]( locsCfg );
             		return;
             	},
 
             	buildHex : function ( cfg, sortChar ) {
-            		var style;
-            		style = ( !!sortChar ? trim(sortChar)+"|" : "|" ) + trim( cfg.hex.bgclr.toUpperCase() ) +"|"+ trim( cfg.hex.txtclr.toUpperCase() );
+            		var style = ( !!sortChar ? trim(sortChar)+"|" : "|" ) + trim( cfg.hex.bgclr.toUpperCase() ) +"|"+ trim( cfg.hex.txtclr.toUpperCase() );
             		return this.config.HEX_MARKER.replace( this.config.styleKey, style );
             	},
 
@@ -956,7 +912,6 @@
             name : "SEARCH",
             use  : true,
             
-            //:::::::::::::::::::::::::
             config : {
 
                 nodes : {
@@ -969,7 +924,6 @@
                 errClass    : "error"
 
             },
-            //:::::::::::::::::::::::::
 
             module : {
 
@@ -1278,8 +1232,6 @@
             name : "TERRITORY",
             use  : ydlMapConfig.model.TERRITORY,
             
-
-            //:::::::::::::::::::::::::
             config : {
 
                 hideFlag : "hide",
@@ -1296,7 +1248,6 @@
                 }
 
             },
-            //:::::::::::::::::::::::::
 
             module : {
 
@@ -1425,12 +1376,9 @@
             name : "CANVAS",
             use  : true,
             
-            //:::::::::::::::::::::::::
             config : {
                 mapNode : ".mapCanvas"
             },
-            //:::::::::::::::::::::::::
-
 
             module : {
                 
@@ -1470,8 +1418,6 @@
             name : "CONFIG",
             use  : true,
             
-
-            //:::::::::::::::::::::::::
             config : {
                 mapTypeId : "ROADMAP",
                 center : {
@@ -1480,7 +1426,6 @@
                 },
                 zoom  : window.ydlMapConfig.zoom || 8
             },
-            //:::::::::::::::::::::::::
 
             module : {
 
@@ -1530,7 +1475,6 @@
             name : "API",
             use  : true,
             
-            //:::::::::::::::::::::::::
             config : {
                 file : "https://maps.googleapis.com/maps/api/js",
                 params : {
@@ -1538,7 +1482,6 @@
                     callback : "gmapscb"
                 }
             },
-            //:::::::::::::::::::::::::
 
             module : {
 
@@ -1549,7 +1492,6 @@
 
                 load : function () {
                     var file = K.Util.add_QS_Params( this.config.file, this.config.params );
-
                     K.Util.loadScript( file );
                 },
 
@@ -1571,11 +1513,9 @@
             name : "LOAD",
             use  : true,
 
-            //:::::::::::::::::::::::::
             config : {
                 file : "templates.html"
             },
-            //:::::::::::::::::::::::::
 
             module : {
 
@@ -1584,25 +1524,22 @@
                 },
 
                 load : function () {
-                    var _I = this;
-
                     K.Util.ajax({
                     	type    : "GET",
-                        url     : trim( _I.config.file ),
-                        success : _I.prepare
+                        url     : trim( this.config.file ),
+                        success : this.prepare
                     });
                 },
 
                 prepare : function ( tmplHTML ) {
-                    $("<div />")
+                    $("<tmpl />")
                     .append( tmplHTML )
                     .find("script")
                     .each(function(){
                         var 
-                        $this   = $(this),
-                        tmplId  = trim( $this.attr("id") ),
-                        tmplTxt = trim( $this.html() );
-
+                        $this   = $(this)[0],
+                        tmplId  = trim( $this.id ),
+                        tmplTxt = trim( $this.innerHTML );
                         K.TEMPLATES[ tmplId ] = tmplTxt.replace(/\>[\r\n|\n|\n\t ]+\</g, "><");
                     });
 
@@ -1610,9 +1547,8 @@
                 }
             }
         });
-
     }());
-
+	// - / METRO APP -
 
     //  _INIT
     $( K.Builder.start );
