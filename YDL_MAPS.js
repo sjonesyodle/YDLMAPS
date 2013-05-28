@@ -135,6 +135,32 @@
     			return !!test ? ( !!retKey ? needle : test ) : false;
     		},
 
+    		createJNodes : function ( nodeObj, subObjProp ) {
+                var prop, curr;
+
+                if ( typeof nodeObj !== "object" ) return false;
+
+                if ( subObjProp ) subObjProp = trim( subObjProp );
+
+                for ( prop in nodeObj ) {
+                    prop = trim( prop );
+
+                    if ( subObjProp && typeof nodeObj[prop] == "object"  ) {
+
+                        if ( !nodeObj[prop].hasOwnProperty( subObjProp ) ) return false;
+
+                        curr = nodeObj[prop][subObjProp] = $( nodeObj[prop][subObjProp] );
+
+                    }
+                    else curr = nodeObj[prop] = $( nodeObj[prop] );
+
+
+                    if ( !this.isNode( curr ) ) return false;
+                }
+
+                return true;
+            },
+
             ajax : function ( o ) {
                 var def = { type : "POST" };
                 return $.ajax( $.extend( def, o ) );
@@ -392,7 +418,8 @@
             "docready_markers",
             "load_info_windows",
             "viewport_changed",
-            "templates_loaded"
+            "templates_loaded",
+            "loc_list_render_update"
         ]);
 
 
@@ -458,7 +485,6 @@
                 }
             }
         });
-
 
 		
 		//::::::::::::::::::::::::::::::::::::::::
@@ -825,6 +851,87 @@
             }
 
 		});
+	
+
+		//:: TOTAL LOCS COUNTER VIEW
+        __M({
+            ns   : NS.LOC_DATA,
+            name : "TOTAL_LOCS",
+            use  : true,
+
+            config : {
+
+                nodes : {
+                    absNode : ".totalLocs_abs",
+                    relNode : ".totalLocs_rel",
+                },
+
+                lockAttr : "lock"
+            },
+
+            module : {
+
+                init: function() {
+                    var _I = this;
+                    if (!K.Util.createJNodes( this.config.nodes )) return;
+
+                    _I.render();
+
+                    _I.hub.listen(MSGS.loc_list_render_update, function(hideFlag) {
+                        _I.hideFlag = hideFlag;
+                        _I.update();
+                    });
+                },
+
+                update : function () {
+                	var 
+                	_I   = this,
+                	lock = this.config.lockAttr;
+
+                	_.each( this.config.nodes, function( node, k, o ){
+                		if ( !node.data( lock ) && ( k in _I.render ) ) {
+                			_I.render[ k ].call( o[ k ] );
+                		}
+                	});
+                },
+
+                render : function () {
+                    var _I = this;
+
+                    _I.render = {
+
+                        absNode : function () {
+                            this.text( _I.totalLocs() ).data( _I.config.lockAttr, true );
+                        },
+
+                        relNode : function () {
+                            var i, l, x, hideFlag = _I.hideFlag;
+
+                            console.log(hideFlag);
+
+                            i = x = 0;
+                            l = _I.totalLocs();
+                            for ( ; i < l; i += 1 ) {
+                                x += !!K.LOC_DATA[ i ][ hideFlag ] ? 0 : 1;
+                            }
+
+                            this.text( x ); 
+                        }
+                    };
+                    
+                },
+
+                lockNode : function ( node, bool ) {
+                    return node.data(this.config.lockAttr, bool);
+                },
+
+                totalLocs : function () {
+                    return Kernel.LOC_DATA.length;
+                }
+
+            }
+
+        });
 		
 		//:: LIST VIEW FEATURE
         __M({
@@ -864,15 +971,17 @@
                     });
 
                     L( MSGS.loc_data_sorted , function( hideFlag ) {
-                        _I.buildViews( hideFlag );
+                    	_I.hideFlag = hideFlag;
+                        _I.buildViews();
                         _I.render();
                     });
 
                 },
 
-                buildViews : function ( hideFlag ) {
+                buildViews : function () {
                     var
-                    _I     = this,
+                    _I       = this,
+                    hideFlag = this.hideFlag, 
                     template = _.template( _I.template );
 
                     _I.fullListView = "";
@@ -887,6 +996,7 @@
 
                 render : function () {
                    this.config.listRootNode.append( this.fullListView );
+                   this.hub.broadcast( MSGS.loc_list_render_update, this.hideFlag );
                 }
 
             }
@@ -1521,6 +1631,7 @@
                 }
             }
         });
+		
     }());
 	// - / METRO APP -
 
