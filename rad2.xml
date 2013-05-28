@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <locations>
   <location id="1"  name="Valvoline of Bloomington, MN"  address="8602 Lyndale Avenue" city="Bloomington" state="MN" zip="55420"  phone="952-467-8502"  url="http://www.valvoline-bloomingtonmn.com?jagId=474"  lat="44.847208" lng="-93.289104" />
-
+  <location id="2"  name="Valvoline of Fridley, MN"  address="5701 University Avenue NE" city="Fridley" state="MN" zip="55432"  phone="763-244-2885"  url="http://www.valvoline-fridleymn.com?jagId=474"  lat="45.071857" lng="-93.262732" />
 </locations>

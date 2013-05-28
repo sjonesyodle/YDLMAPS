@@ -302,15 +302,11 @@
                 };
             },
 
-            checkZip : function ( val ) {
-                var rgx = /^\d{5}([\-]\d{4})?$/;
-                return rgx.test( trim(val) );
-            },
-
             validate : (function(){
                 var lib = {
                     email : /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i,
-                    zip : /^\d{5}([\-]\d{4})?$/
+                    zip : /^\d{5}([\-]\d{4})?$/,
+                    postal : /^[ABCEGHJKLMNPRSTVXY]\d[ABCEGHJKLMNPRSTVWXYZ]( )?\d[ABCEGHJKLMNPRSTVWXYZ]\d$/
                 };
 
                 return function ( val, regex ) {
@@ -379,7 +375,37 @@
     	LOC_DATA    : { },
         USER_COORDS : { },
         TEMPLATES   : { },
-        GMAP        : { }
+        GMAP        : { },
+
+        GMARKERS_VIEWSTATE : (function () {
+        	var
+        	shown  = [],
+        	hidden = [];
+
+        	return {
+
+        		clear : function () {
+        			shown  = [];
+        			hidden = [];
+        		},
+
+        		shown : function ( o ) {
+        			shown.push( o );
+        		},
+
+        		hidden : function ( o ) {
+        			hidden.push( o );
+        		},
+
+        		report : function () {
+        			return {
+        				shown  : shown,
+        				hidden : hidden
+        			};
+        		}
+        	};
+
+        }())
     });
 
 	__M = K.Builder.defineMod;
@@ -436,7 +462,7 @@
             use  : true,
                 
             config : {
-                file : "rad2.xml"
+                file : "terr.xml"
             },
 
             module : {
@@ -444,7 +470,6 @@
                 init : function () {
                     if ( this.config.file ) {
                     	K.LOC_DATA = K.Util.xml2json( this.config.file ).json;
-                    	console.log(K.LOC_DATA);
 	                    K.mapModel();
                     }
                 }
@@ -508,22 +533,29 @@
         		},
 
         		updateZoom : function ( hideFlag ) {
-        			var bounds;
+        			var 
+        			bounds,
+        			report = K.GMARKERS_VIEWSTATE.report();
 
-        			if ( Kernel.LOC_DATA.length < 2 ) {
-        				Kernel.GMAP.setCenter( Kernel.LOC_DATA[0].marker.getPosition() );
+        			if ( K.LOC_DATA.length < 2 ) {
+        				K.GMAP.setCenter( K.LOC_DATA[0].marker.getPosition() );
         				return;
         			}
 
+        			if ( report.shown.length === 1 ) {
+        				K.GMAP.setCenter( report.shown[0].marker.getPosition() );
+        				return;
+        			}
+        			
         			bounds = new google.maps.LatLngBounds();
 
-        			_.each( Kernel.LOC_DATA, function( o ) {
+        			_.each( K.LOC_DATA, function( o ) {
         				if ( !o[ hideFlag ] ) {
         					bounds.extend( o.marker.getPosition() );
         				}
         			});
 
-        			Kernel.GMAP.fitBounds( bounds );	
+        			K.GMAP.fitBounds( bounds );	
         		}
 
         	}
@@ -1189,8 +1221,8 @@
 
             config : {
                 distanceKey : "distance",
-                hideFlag : "hide",
-                boundary : 30,
+                hideFlag    : "hide",
+                boundary    : 30,
 
                 messages : {
                     searchError : "Invalid Search Term",
@@ -1279,6 +1311,7 @@
                     	if ( o[ _I.config.hideFlag ] ) _I.hiddenLocs += 1;
                     });
 
+                    Kernel.TOTAL_SHOWN_MARKERS = _I.hiddenLocs;
                     return _I;
                 },
 
@@ -1354,7 +1387,7 @@
 
                 hideFlag : "hide",
 
-                searchType : {
+                codeType : {
                 	zip    : true,
                 	postal : false
                 },
@@ -1372,10 +1405,12 @@
                 init : function () {
                     var _I = this, L = _I.hub.listen, B = _I.hub.broadcast;
 
+                    _I.config.codeType = K.Util.hasBoolProp( _I.config.codeType, true, true );
+                    if ( !_I.config.codeType ) return;
+
                     L( MSGS.gmap_dom_ready, function() {
 
                         _I.GMAP_GEOCODER = new google.maps.Geocoder();
-
                         B( MSGS.docready_markers, false );
                         B( MSGS.docready_loclist, false );
 
@@ -1385,70 +1420,56 @@
 
                         L( MSGS.user_search_request, function( userSearch ) {
 
-                        	// _I.userSearch = trim( userSearch );
+                        	_I.userSearch = trim( userSearch );
 
-                            _I.userZip = trim( userSearch );
-
-                            if ( !_I.checkZip() ) {
+                            if ( !_I.validateSearch() ) {
                                 _I.triggerError( _I.config.messages.searchError );
                                 return;
                             }
 
                             _I.geoCodeSearch( _I.build );
-
                         });
-
                     });
                     
                 },
 
                 build : function () {
-                    this
-                    .checkTerritory()
+                    this.checkTerritory()
                     .locFound()
+                    .sort()
                     .complete();
-                },                
-
-                checkTerritory : function () {
-                    var
-                    _I = this,
-                    LOC_DATA = K.LOC_DATA,
-                    i, len, currLoc,
-
-                    zipMatch = function ( zipObjArr ) {
-                        var i, len;
-
-                        i   = 0;
-                        len = zipObjArr.length;
-                        for ( ; i < len; i+= 1 ) {
-                            if ( zipObjArr[i]._code == _I.userZip ) return true;
-                        }
-
-                        return false;
-                    };
-
-                    _I.hiddenLocs = 0;
-                    i   = 0;
-                    len = LOC_DATA.length;
-                    for ( ; i < len; i += 1 ) {
-
-                        currLoc = LOC_DATA[i];
-                        currLoc[ _I.config.hideFlag ] = !zipMatch( currLoc.zip ) ? true : false;
-                        if ( currLoc[ _I.config.hideFlag ] ) _I.hiddenLocs += 1;
-
-                    }
-
-                    return _I;
                 },
 
-                checkZip : function () {
-                    return K.Util.checkZip( this.userZip );
+                checkTerritory : function () {
+                	var 
+                	_I         = this,
+                	codeArrKey = _I.config.codeType,
+                	VIEWSTATE  = K.GMARKERS_VIEWSTATE;
+
+                	VIEWSTATE.clear();
+                	_.each( K.LOC_DATA, function( loc, i ) {
+                		loc[ _I.config.hideFlag ] = !_I.codeMatch( loc[ codeArrKey ] ) ? true : false;
+                		( !!loc[ _I.config.hideFlag ] ? VIEWSTATE.hidden( loc ) : VIEWSTATE.shown( loc ) );
+                	});
+
+                	return _I;
+                },             	 
+
+                codeMatch : function ( zipObjArr ) {
+                	var _I = this;
+                	return _.find( zipObjArr, function( v ){
+                		return v._code === _I.userSearch;
+                	});
+                },
+
+                validateSearch : function () {
+                    return K.Util.validate( this.userSearch, this.config.codeType );
                 },
 
                 geoCodeSearch : function ( cb ) {
                     var _I = this;
 
-                    _I.GMAP_GEOCODER.geocode({ address : _I.userZip }, function( results, status ) {
+                    _I.GMAP_GEOCODER.geocode({ address : _I.userSearch }, function( results, status ) {
 
                         if ( status != google.maps.GeocoderStatus.OK ) {
                             _I.triggerError( _I.config.messages.searchError );
@@ -1463,13 +1484,30 @@
                 },
 
                 locFound : function () {
-                    var _I = this;
-
-                    if ( _I.hiddenLocs === K.LOC_DATA.length ) {
-                        _I.triggerError( _I.config.messages.noResults ); 
+                    if ( K.GMARKERS_VIEWSTATE.report().hidden.length === K.LOC_DATA.length ) {
+                        this.triggerError( this.config.messages.noResults ); 
                     }
 
-                    return _I;
+                    return this;
+                },
+
+                sort : function () {
+                	var 
+                	report = K.GMARKERS_VIEWSTATE.report(),
+                	locs   = [];
+                	if ( report.shown.length > 0 ) {
+
+                		_.each( report.shown, function ( loc ) {
+                			locs.push( loc );
+                		});
+
+                		_.each( report.hidden, function ( loc ) {
+                			locs.push( loc );
+                		});
+                	}
+
+                	K.LOC_DATA = locs;
+                	return this;
                 },
 
                 triggerError : function ( msg ) {
