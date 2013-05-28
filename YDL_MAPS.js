@@ -575,7 +575,7 @@
 
         });
 
-		
+
 		//:: MARKER STYLES
 		__M({
 			ns   : NS.LOC_DATA,
@@ -851,9 +851,9 @@
             }
 
 		});
-	
 
-		//:: TOTAL LOCS COUNTER VIEW
+	
+				//:: TOTAL LOCS COUNTER VIEW
         __M({
             ns   : NS.LOC_DATA,
             name : "TOTAL_LOCS",
@@ -907,8 +907,6 @@
                         relNode : function () {
                             var i, l, x, hideFlag = _I.hideFlag;
 
-                            console.log(hideFlag);
-
                             i = x = 0;
                             l = _I.totalLocs();
                             for ( ; i < l; i += 1 ) {
@@ -932,6 +930,7 @@
             }
 
         });
+
 		
 		//:: LIST VIEW FEATURE
         __M({
@@ -942,7 +941,8 @@
             config : {
                 tmplNodeId     : "locationList",
                 listRootNode   : "#locationList",
-                loadListOnload : false
+                loadListOnload : false,
+                listPinsOnload : true
             },
 
             module : {
@@ -955,19 +955,14 @@
                     });
                     
                     L( MSGS.templates_loaded, function(){
-
                         _I.template = K.TEMPLATES[ _I.config.tmplNodeId ];
                         if ( !_I.template ) return;
                         
                         _I.config.listRootNode = $( _I.config.listRootNode );
-
                         if ( !K.Util.isNode( _I.config.listRootNode ) ) return;
-                        
                         if ( !_I.config.loadListOnload ) return;
 
-                        _I.buildViews();
-                        _I.render();
-
+                        _I.onloadBuild();
                     });
 
                     L( MSGS.loc_data_sorted , function( hideFlag ) {
@@ -976,13 +971,29 @@
                         _I.render();
                     });
 
+                    L( MSGS.markers_loaded, function(){
+                    	if ( _I.config.listPinsOnload ) {
+	         				_I.buildViews();
+		                    _I.render();
+		                    _I.config.listPinsOnload = !_I.config.listPinsOnload;
+	         			}
+                    });
+
+                },
+
+                onloadBuild : function () {
+                	if ( !this.config.listPinsOnload ) {
+                		this.buildViews();
+	                    this.render();
+	                    return;
+                	}
                 },
 
                 buildViews : function () {
                     var
-                    _I       = this,
-                    hideFlag = this.hideFlag, 
-                    template = _.template( _I.template );
+                    _I          = this,
+                    hideFlag    = this.hideFlag,
+                    template    = _.template( _I.template );
 
                     _I.fullListView = "";
                     _I.config.listRootNode.empty();
