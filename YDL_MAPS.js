@@ -362,6 +362,9 @@
 
             // radius model
             if ( locData.locations && locData.locations.location ) {
+            	if ( !_.isArray( locData.locations.location ) ) {
+            		locData.locations.location = [locData.locations.location];
+            	}
                 K.LOC_DATA = locData.locations.location;
                 return;
             }
@@ -433,7 +436,7 @@
             use  : true,
                 
             config : {
-                file : "locations.xml"
+                file : "rad2.xml"
             },
 
             module : {
@@ -441,6 +444,7 @@
                 init : function () {
                     if ( this.config.file ) {
                     	K.LOC_DATA = K.Util.xml2json( this.config.file ).json;
+                    	console.log(K.LOC_DATA);
 	                    K.mapModel();
                     }
                 }
@@ -504,7 +508,14 @@
         		},
 
         		updateZoom : function ( hideFlag ) {
-        			var bounds  = new google.maps.LatLngBounds();
+        			var bounds;
+
+        			if ( Kernel.LOC_DATA.length < 2 ) {
+        				Kernel.GMAP.setCenter( Kernel.LOC_DATA[0].marker.getPosition() );
+        				return;
+        			}
+
+        			bounds = new google.maps.LatLngBounds();
 
         			_.each( Kernel.LOC_DATA, function( o ) {
         				if ( !o[ hideFlag ] ) {
@@ -853,7 +864,7 @@
 		});
 
 	
-				//:: TOTAL LOCS COUNTER VIEW
+		//:: TOTAL LOCS COUNTER VIEW
         __M({
             ns   : NS.LOC_DATA,
             name : "TOTAL_LOCS",
@@ -950,8 +961,8 @@
                 init : function () {
                     var _I = this, L = _I.hub.listen;
                     
-                    L( MSGS.docready_loclist, function () {
-                        _I.config.loadListOnload = true;
+                    L( MSGS.docready_loclist, function ( bool ) {
+                        _I.config.loadListOnload = bool;
                     });
                     
                     L( MSGS.templates_loaded, function(){
@@ -972,7 +983,7 @@
                     });
 
                     L( MSGS.markers_loaded, function(){
-                    	if ( _I.config.listPinsOnload ) {
+                    	if ( _I.config.listPinsOnload && _I.config.loadListOnload ) {
 	         				_I.buildViews();
 		                    _I.render();
 		                    _I.config.listPinsOnload = !_I.config.listPinsOnload;
@@ -1202,7 +1213,7 @@
                 init : function () {
                     var _I = this, L = _I.hub.listen, B = _I.hub.broadcast;
 
-                    B( MSGS.docready_loclist );
+                    B( MSGS.docready_loclist, true );
 
                     L( MSGS.gmap_dom_ready, function(){
 
@@ -1366,6 +1377,7 @@
                         _I.GMAP_GEOCODER = new google.maps.Geocoder();
 
                         B( MSGS.docready_markers, false );
+                        B( MSGS.docready_loclist, false );
 
                         B( MSGS.search_model_ready, {
                             placeholder : _I.config.messages.placeholder
