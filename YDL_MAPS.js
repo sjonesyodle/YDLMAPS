@@ -52,23 +52,24 @@
         Builder : {
 
             modules : {},
-
+            aliases : {},
             defineMod : function ( o ) {
                 var 
                 name,
                 proto = {
-                    ns     : "",
-                    name   : "",
-                    use    : true,
-                    config : {},
-                    module : {}
+                    ns      : "",
+                    name    : "",
+                    use     : true,
+                    config  : {},
+                    module  : {},
+                    aliases : []
                 },
 
                 checkProto = function () {
                     var prop;
 
                     for ( prop in o ) {
-                        if ( !proto.hasOwnProperty( prop ) || typeof o[prop] !== typeof proto[prop] ) return false;
+                        if ( !prop in proto || typeof o[prop] !== typeof proto[prop] ) return false;
                     }
 
                     if ( !o.module.init || typeof o.module.init !== "function" ) return false;
@@ -80,17 +81,99 @@
 
                 name = trim( o.ns ) + "/" + trim( o.name );
 
-                o.module.config = o.config || {};
+                o.module.config  = o.config || {};
+
+                if ( o.aliases ) {
+                	K.Builder.createAliases( o.aliases, o.module.config );
+                }
 
                 K.Builder.modules[ name ] = o;
+                delete K.Builder.modules[ name ].aliases;
             },
 
-            start : function () {
+           	createAliases : function ( aliasCfg, configO ) {
+           		var aliasCell, aliases, createLinks, getParentObjRef;
+
+           		if ( !aliasCfg.length || typeof aliasCfg[0] !== "string" || typeof aliasCfg[1] !== "object"  ) return;
+
+
+           		getParentObjRef = function ( propArr, objRef ) {
+           			var o;
+
+           			if ( !objRef ) {
+           				o = configO[ propArr[0] ];
+           				propArr.pop();
+           			} 
+           			else {
+           				propArr.shift();
+           				o = objRef[ propArr[0] ];
+           			}
+         			return propArr.length > 0 ? getParentObjRef( propArr, o ) : objRef;
+           		};
+
+           		createLinks = function () {
+           			_.each( aliasCfg[1], function ( v, k, o ) {
+           				var levels, updateProp, updateObj;
+           				v = v.split(".");
+           				levels = v.length;
+
+           				if ( levels === 1 ) {
+           					if ( v[0] in configO ) {
+           						o[k] = [configO, v[0]];
+           						return;
+           					}
+           				}
+
+           				if ( levels > 1 ) {
+           					updateProp = v[ levels - 1 ];
+           					updateObj  = getParentObjRef( v );
+           					if ( updateObj ) o[k] = [updateObj, updateProp];
+           					else delete o[k];
+           				}
+
+           			});
+           		};
+
+           		createLinks();
+
+           		Kernel.Builder.aliases[ trim(aliasCfg[0]) ] = aliasCfg[1];
+           	},
+
+            start : function ( cfg ) {
                 var
                 modules = K.Builder.modules,
+                aliases = K.Builder.aliases,
                 registerMods = [],
                 define = K.module.define,
-                prop;
+                prop,
+                emptyObj = $.isEmptyObject;
+
+                //use cfg to update mod configs using alias object
+                if ( typeof cfg === "object" && !emptyObj( aliases ) ) {
+
+                	_.each( cfg, function( aliasObj, aliasGroup ) {
+                		aliasGroup = trim( aliasGroup );
+
+                		if ( (aliasGroup in aliases) && !emptyObj( aliasObj )) {
+
+                			_.each( aliasObj, function( aliasValue, aliasKey ){
+                				var ln;
+                				aliasKey = trim( aliasKey );
+                				if ( aliasKey in aliases[aliasGroup]) {
+
+                					ln = aliases[aliasGroup][aliasKey];
+                					ln[0][ln[1]] = aliasValue;
+                				}
+
+                			})
+
+                		}
+
+                	});
+
+                }
+
+                console.log(modules);             
 
                 for ( prop in modules ) {
                     if ( !!modules[prop].use ) {
@@ -454,6 +537,34 @@
 
         //::::::::::::::::::::::::::::::::::::::::
         //:::::::::::: Location Data Modules
+
+        __M({
+            ns   : NS.templates,
+            name : "TEST",
+            use  : true,
+
+            config : {
+                someval : {
+                	something : {
+                		another : "test",
+                		two : "testing"
+                	}
+                	
+                }
+            },
+
+            aliases : ["myAlias", {
+            	someSetting : "someval.something.another",
+            	anotherAlias : "someval.something.two"
+            }],
+
+            module : {
+
+                init : function () {
+
+                }
+            }
+        });
 
         // :: LOAD LOC DATA
         __M({
@@ -1692,11 +1803,40 @@
                 }
             }
         });
+
+
+		// __M({
+		// 	ns   : NS.templates,
+  //           name : "TESTING",
+  //           use  : true,
+
+  //           config : {
+  //           	someVal : {
+  //           		anotherProp : "somesetting"
+  //           	}
+  //           },
+
+  //           aliases : {
+  //           	"someAlias" : "someVal.anotherProp"
+  //           },
+
+  //           module : {
+
+  //           	init : function () {
+
+  //           	}
+  //           }
+
+		// });
+		
 		
     }());
 	// - / METRO APP -
 
-    //  _INIT
-    $( K.Builder.start );
+
+	window.YDLMAPS = K.Builder.start;
+
+    // //  _INIT
+    // $( K.Builder.start );
 
 }( jQuery, window ));
