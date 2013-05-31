@@ -1005,7 +1005,7 @@
 
                 nodes : {
                     absNode : "",
-                    relNode : "",
+                    relNode : ""
                 },
 
                 lockAttr : "lock"
