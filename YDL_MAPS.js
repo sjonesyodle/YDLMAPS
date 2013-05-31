@@ -147,8 +147,6 @@
                 emptyObj = $.isEmptyObject,
                 inArr = $.inArray;
 
-                console.log(aliases);
-
                 //use cfg to update mod configs using alias object
                 if ( typeof cfg.config === "object" && !emptyObj( aliases ) ) {
 
