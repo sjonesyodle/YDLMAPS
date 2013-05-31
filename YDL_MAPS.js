@@ -653,13 +653,11 @@
             use  : false,
             
             config : {
-                file       : "",
                 tmplNodeId : "",
                 userEvent  : "" // click or mouseover
             },
 
             aliases : ["infoWindows", {
-            	file       : "file",
             	tmplNodeId : "tmplNodeId",
             	mouseEvent : "userEvent"
             }],
@@ -1827,78 +1825,5 @@
 
 	// INIT
 	window.YDLMAPS = K.Builder.start;
-
-
-	// example instance
-	// YDLMAPS({
-	//     use : [
-	//         "RADIUS", // RADIUS or TERRITORY (REQUIRED)
-	//         "INFO_WINDOWS",
-	//         "TOTAL_LOCS",
-	//         "LIST_VIEW",
-	//         "SEARCH",
-	//         "CANVAS",
-	//         "TMPL"
-	//     ],
-	    
-	//     config : {
-	    
-	//         "mapCanvas" : {
-	//             mapNode : ".mapCanvas"
-	//         },
-	        
-	//         "mapConfig" : {
-	//             mapType : "ROADMAP",
-	//             lat : 43.2256525,
-	//             lng : -71.4630366,
-	//             zoom : 8
-	//         },
-	        
-	//         "locData" : {
-	//             file : "rad.xml"
-	//         },
-	        
-	//         "locListView" : {
-	//             tmplNodeId : "locationList",
-	//             listRootNode : "#locationList"
-	//         },
-	        
-	//         "userSearch" : {
-	//             inputNode : ".searchInput",
-	//             searchNode : ".searchBtn",
-	//             placeHolder : "Search it up!",
-	//             errColor : "green",
-	//             errClass : "error"
-	//         },
-	        
-	//         "infoWindows" : {
-	//             file : "templates.html",
-	//             tmplNodeId : "infoWindows",
-	//             mouseEvent : "click"
-	//         },
-	        
-	//         "markerStyles" : {
-	//             userType   : "hex", // hex or img
-	//             userHexBG  : "666666",
-	//             userImgSrc : "",
-	            
-	//             locsType   : "hex",
-	//             locsHexBG  : "D96666",
-	//             locsHexTxt : "FFFFFF",
-	//             locsImgSrc : "",
-	//             locsSortAlpha : true,
-	//             locsSortNum : false
-	//         },
-	        
-	//         "locCounter" : {
-	//             absNode : ".totalLocs_abs",
-	//             relNode : ".totalLocs_rel"
-	//         },
-	        
-	//         "templates" : {
-	//             file : "templates.html"
-	//         }
-	//     }
-	// });
 
 }( jQuery, window ));
