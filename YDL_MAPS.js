@@ -50,7 +50,6 @@
     K.extend(K, {
 
         Builder : {
-
             modules : {},
             aliases : {},
             defineMod : function ( o ) {
@@ -82,7 +81,6 @@
                 name = trim( o.ns ) + "/" + trim( o.name );
 
                 o.module.config  = o.config || {};
-
                 if ( o.aliases ) {
                 	K.Builder.createAliases( o.aliases, o.module.config );
                 }
@@ -146,12 +144,15 @@
                 registerMods = [],
                 define = K.module.define,
                 prop,
-                emptyObj = $.isEmptyObject;
+                emptyObj = $.isEmptyObject,
+                inArr = $.inArray;
+
+                console.log(aliases);
 
                 //use cfg to update mod configs using alias object
-                if ( typeof cfg === "object" && !emptyObj( aliases ) ) {
+                if ( typeof cfg.config === "object" && !emptyObj( aliases ) ) {
 
-                	_.each( cfg, function( aliasObj, aliasGroup ) {
+                	_.each( cfg.config, function( aliasObj, aliasGroup ) {
                 		aliasGroup = trim( aliasGroup );
 
                 		if ( (aliasGroup in aliases) && !emptyObj( aliasObj )) {
@@ -173,10 +174,8 @@
 
                 }
 
-                console.log(modules);             
-
                 for ( prop in modules ) {
-                    if ( !!modules[prop].use ) {
+                	if ( (cfg.use && inArr( prop.split("/")[1], cfg.use ) > -1) || !!modules[prop].use ) {
                         define( prop, modules[prop].module );
                         registerMods.push({ type : prop, id : prop });
                     }
@@ -517,8 +516,6 @@
             "gmap_api_loaded",
             "gmap_config_ready",
             "gmap_dom_ready",
-            "loc_data_ready",
-            "loc_coords_ready",
             "new_user_search",
             "user_search_update",
             "user_search_request",
@@ -538,34 +535,6 @@
         //::::::::::::::::::::::::::::::::::::::::
         //:::::::::::: Location Data Modules
 
-        __M({
-            ns   : NS.templates,
-            name : "TEST",
-            use  : true,
-
-            config : {
-                someval : {
-                	something : {
-                		another : "test",
-                		two : "testing"
-                	}
-                	
-                }
-            },
-
-            aliases : ["myAlias", {
-            	someSetting : "someval.something.another",
-            	anotherAlias : "someval.something.two"
-            }],
-
-            module : {
-
-                init : function () {
-
-                }
-            }
-        });
-
         // :: LOAD LOC DATA
         __M({
             ns   : NS.LOC_DATA,
@@ -573,8 +542,12 @@
             use  : true,
                 
             config : {
-                file : "terr.xml"
+                file : "rad2.xml"
             },
+
+            aliases : ["locData", {
+            	"file" : "file"
+            }],
 
             module : {
 
@@ -606,7 +579,6 @@
                     var _I = this;
                     _I.hub.listen( MSGS.gmap_api_loaded, function(){
                         _I.addCoords();
-                        _I.hub.broadcast( MSGS.loc_coords_ready );
                     });
                 },
 
@@ -678,13 +650,19 @@
         __M({
             ns   : NS.LOC_DATA,
             name : "INFO_WINDOWS",
-            use  : true,
+            use  : false,
             
             config : {
-                file       : "templates.html",
-                tmplNodeId : "infoWindows",
-                userEvent  : "click" // click or mouseover
+                file       : "",
+                tmplNodeId : "",
+                userEvent  : "" // click or mouseover
             },
+
+            aliases : ["infoWindows", {
+            	file       : "file",
+            	tmplNodeId : "tmplNodeId",
+            	mouseEvent : "userEvent"
+            }],
 
             module : {
 
@@ -764,15 +742,27 @@
 
             			sorting  : {
             				alpha : false,
-            				numeric : true
+            				numeric : false
             			}
             		}
             	},
 
             	styleKey   : "{{style}}",
             	HEX_MARKER : "https://chart.googleapis.com/chart?chst=d_map_pin_letter&chld={{style}}"
-
             },
+
+        	aliases : ["markerStyles", {
+        		userType   : "markers.user.use",
+        		userHexBG  : "markers.user.hex.bgclr",
+        		userHexTxt : "markers.user.hex.txtclr",
+        		userImgSrc : "markers.user.img",
+        		locsType   : "markers.locs.use",
+        		locsHexBG  : "markers.locs.hex.bgclr",
+        		locsHexTxt : "markers.locs.hex.txtclr",
+        		locsImgSrc : "markers.locs.img",
+        		locsSortAlpha : "markers.locs.sorting.alpha",
+        		locsSortNum : "markers.locs.sorting.numeric"
+            }],
 
             module : {
 
@@ -1011,17 +1001,22 @@
         __M({
             ns   : NS.LOC_DATA,
             name : "TOTAL_LOCS",
-            use  : true,
+            use  : false,
 
             config : {
 
                 nodes : {
-                    absNode : ".totalLocs_abs",
-                    relNode : ".totalLocs_rel",
+                    absNode : "",
+                    relNode : "",
                 },
 
                 lockAttr : "lock"
             },
+
+            aliases : ["locCounter", {
+            	absNode : "nodes.absNode",
+            	relNode : "nodes.relNode"
+            }],
 
             module : {
 
@@ -1030,8 +1025,9 @@
                     if (!K.Util.createJNodes( this.config.nodes )) return;
 
                     _I.render();
+                    _I.update();
 
-                    _I.hub.listen(MSGS.loc_list_render_update, function(hideFlag) {
+                    _I.hub.listen(MSGS.loc_data_sorted, function(hideFlag) {
                         _I.hideFlag = hideFlag;
                         _I.update();
                     });
@@ -1090,14 +1086,19 @@
         __M({
             ns   : NS.LOC_DATA,
             name : "LIST_VIEW",
-            use  : true,
+            use  : false,
 
             config : {
-                tmplNodeId     : "locationList",
-                listRootNode   : "#locationList",
+                tmplNodeId     : "",
+                listRootNode   : "",
                 loadListOnload : false,
                 listPinsOnload : true
             },
+
+            aliases : ["locListView", {
+            	"tmplNodeId" : "tmplNodeId",
+            	"listRootNode" : "listRootNode"
+            }],
 
             module : {
 
@@ -1176,20 +1177,29 @@
         __M({
             ns   : NS.geo,
             name : "SEARCH",
-            use  : true,
+            use  : false,
             
             config : {
 
                 nodes : {
-                    input : ".searchInput",
-                    btn   : ".searchBtn"
+                    input : "",
+                    btn   : ""
                 },
 
-                placeholder : "Enter a search term",
-                errColor    : "red",
-                errClass    : "error"
+                placeholder : "",
+                errColor    : "",
+                errClass    : ""
 
             },
+
+            aliases : ["userSearch", {
+            	inputNode   : "nodes.input",
+            	searchNode  : "nodes.btn",
+            	placeHolder : "placeholder",
+            	errColor    : "errColor",
+            	errClass    : "errClass" 
+
+            }],
 
             module : {
 
@@ -1197,7 +1207,6 @@
                     var _I = this, L = _I.hub.listen;
                      
                     L( MSGS.search_model_ready, function ( config ) {
-                        $.extend( _I.config, config );
                         _I.build();
                         L( MSGS.user_search_response, _I.triggerError);
                     });
@@ -1328,7 +1337,7 @@
         __M({
             ns   : NS.geo,
             name : "RADIUS",
-            use  : ydlMapConfig.model.RADIUS,
+            use  : false,
 
             config : {
                 distanceKey : "distance",
@@ -1337,12 +1346,7 @@
 
                 messages : {
                     searchError : "Invalid Search Term",
-                    noResults   : "No Results",
-                    placeholder : "Enter Search Term"
-                },
-
-                styles : {
-                	error : "red"
+                    noResults   : "No Results"
                 },
 
                 coordKeys : {
@@ -1364,10 +1368,7 @@
 
                         B( MSGS.docready_markers, true );
 
-                        B( MSGS.search_model_ready, {
-                            placeholder : _I.config.messages.placeholder,
-                            errColor : _I.config.styles.error
-                        });
+                        B( MSGS.search_model_ready );
 
                         L( MSGS.user_search_request, _I.geoCodeSearch);
 
@@ -1492,7 +1493,7 @@
         __M({
             ns   : NS.geo,
             name : "TERRITORY",
-            use  : ydlMapConfig.model.TERRITORY,
+            use  : false,
             
             config : {
 
@@ -1642,11 +1643,15 @@
         __M({
             ns   : NS.gmaps,
             name : "CANVAS",
-            use  : true,
+            use  : false,
             
             config : {
-                mapNode : ".mapCanvas"
+                mapNode : ""
             },
+
+            aliases : ["mapCanvas", {
+            	mapNode : "mapNode"
+            }],
 
             module : {
                 
@@ -1686,13 +1691,20 @@
             use  : true,
             
             config : {
-                mapTypeId : "ROADMAP",
+                mapTypeId : "",
                 center : {
-                    lat : window.ydlMapConfig.lat,
-                    lng : window.ydlMapConfig.lng
+                    lat : 0,
+                    lng : 0
                 },
-                zoom  : window.ydlMapConfig.zoom || 8
+                zoom  : 10
             },
+
+            aliases : ["mapConfig", {
+            	mapType : "mapTypeId",
+            	lat : "center.lat",
+            	lng : "center.lng",
+            	zoom : "zoom"
+            }],
 
             module : {
 
@@ -1770,12 +1782,16 @@
         //:: TEMPLATE LOADER
         __M({
             ns   : NS.templates,
-            name : "LOAD",
-            use  : true,
+            name : "TMPL",
+            use  : false,
 
             config : {
-                file : "templates.html"
+                file : ""
             },
+
+            aliases : ["templates", {
+            	file : "file"
+            }],
 
             module : {
 
@@ -1804,39 +1820,85 @@
             }
         });
 
-
-		// __M({
-		// 	ns   : NS.templates,
-  //           name : "TESTING",
-  //           use  : true,
-
-  //           config : {
-  //           	someVal : {
-  //           		anotherProp : "somesetting"
-  //           	}
-  //           },
-
-  //           aliases : {
-  //           	"someAlias" : "someVal.anotherProp"
-  //           },
-
-  //           module : {
-
-  //           	init : function () {
-
-  //           	}
-  //           }
-
-		// });
-		
 		
     }());
 	// - / METRO APP -
 
 
+	// INIT
 	window.YDLMAPS = K.Builder.start;
 
-    // //  _INIT
-    // $( K.Builder.start );
+
+	// example instance
+	// YDLMAPS({
+	//     use : [
+	//         "RADIUS", // RADIUS or TERRITORY (REQUIRED)
+	//         "INFO_WINDOWS",
+	//         "TOTAL_LOCS",
+	//         "LIST_VIEW",
+	//         "SEARCH",
+	//         "CANVAS",
+	//         "TMPL"
+	//     ],
+	    
+	//     config : {
+	    
+	//         "mapCanvas" : {
+	//             mapNode : ".mapCanvas"
+	//         },
+	        
+	//         "mapConfig" : {
+	//             mapType : "ROADMAP",
+	//             lat : 43.2256525,
+	//             lng : -71.4630366,
+	//             zoom : 8
+	//         },
+	        
+	//         "locData" : {
+	//             file : "rad.xml"
+	//         },
+	        
+	//         "locListView" : {
+	//             tmplNodeId : "locationList",
+	//             listRootNode : "#locationList"
+	//         },
+	        
+	//         "userSearch" : {
+	//             inputNode : ".searchInput",
+	//             searchNode : ".searchBtn",
+	//             placeHolder : "Search it up!",
+	//             errColor : "green",
+	//             errClass : "error"
+	//         },
+	        
+	//         "infoWindows" : {
+	//             file : "templates.html",
+	//             tmplNodeId : "infoWindows",
+	//             mouseEvent : "click"
+	//         },
+	        
+	//         "markerStyles" : {
+	//             userType   : "hex", // hex or img
+	//             userHexBG  : "666666",
+	//             userImgSrc : "",
+	            
+	//             locsType   : "hex",
+	//             locsHexBG  : "D96666",
+	//             locsHexTxt : "FFFFFF",
+	//             locsImgSrc : "",
+	//             locsSortAlpha : true,
+	//             locsSortNum : false
+	//         },
+	        
+	//         "locCounter" : {
+	//             absNode : ".totalLocs_abs",
+	//             relNode : ".totalLocs_rel"
+	//         },
+	        
+	//         "templates" : {
+	//             file : "templates.html"
+	//         }
+	//     }
+	// });
 
 }( jQuery, window ));
