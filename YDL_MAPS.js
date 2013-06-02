@@ -1017,8 +1017,15 @@
             module : {
 
                 init: function() {
-                    var _I = this;
-                    if (!K.Util.createJNodes( this.config.nodes )) return;
+                    var 
+                    _I     = this,
+                    nodes  = this.config.nodes,
+                    isNode = K.Util.isNode; 
+
+                    nodes.absNode = $( nodes.absNode );
+                    nodes.relNode = $( nodes.relNode );
+
+                    if ( !(isNode(nodes.absNode) || isNode(nodes.relNode)) ) return;
 
                     _I.render();
                     _I.update();
