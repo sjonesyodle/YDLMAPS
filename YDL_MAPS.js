@@ -19,28 +19,6 @@
           evaluate: /\{\{(.+?)\}\}/g
         };
 
-    	$.fn.nodeListener = function ( o ) {
-              var hn, i, len, _I = this;
-              i   = 0;
-              len = parseInt(o.tries, 10);
-
-              hn  = setInterval(function(){
-
-                   var _cn = _I.find(o.cn);
-                   if (i >= len) {
-                        clearInterval(hn);
-                        return false;
-                   }
-                   if (_cn.length > 0) {
-                        o.cb.call(_cn[0]);
-                        clearInterval(hn);
-                        return;
-                   }
-                   i += 1;
-
-              }, o.interval);
-        };
-
         $.XMLtoJSON = function(q){this.init=function(){this.document=this.xml=!1;this.json={};this.duration=new Date;this.options=$.extend({url:!1,xmlString:!1,namespaces:!1,valueIdentifier:"$",attributeIdentifier:"_",emptyValuesAsNull:!1,modify:{},clearEmptyNodes:!1,cache:!1,detectTypes:!1,filter:null,fallback:null,log:!1},q);this.options.url&&this.receiveXML();this.options.xmlString&&(this.xml=this.options.xmlString);this.xml&&(this.parseXML(),this.convertXML(),null!=this.options.fallback&&(this.json=={}|| this.json.parsererror)&&this.options.fallback({message:"XML is invalid",code:500}),this.modifyJSON());this.duration=new Date-this.duration+" ms"};this.receiveXML=function(){var a;$.ajax({type:"GET",url:this.options.url,async:!1,dataType:"text",cache:this.options.cache,complete:function(j){j.responseText&&(a=j.responseText.replace(/^\s+/,""))}});a?this.xml=a:(this.throwError("Cannot receive XML from "+this.options.url),null!=this.options.fallback&&this.options.fallback({message:"Cannot receive XML from "+ this.options.url,code:404}))};this.parseXML=function(){this.xml=this.xml.replace(/^[\s\n\r\t]*[<][\?][xml][^<^>]*[\?][>]/,"");window.ActiveXObject?(this.document=new ActiveXObject("Microsoft.XMLDOM"),this.document.async=!1,this.document.loadXML(this.xml)):(this.document=new DOMParser,this.document=this.document.parseFromString(this.xml,"application/xml"));(!this.xml||!this.document)&&this.throwError("Cannot parse XML")};this.convertXML=function(){var a=this;(function g(c,b,d,h){var e=d.valueIdentifier, f=d.attributeIdentifier;if(9===c.nodeType)$.each(c.childNodes,function(){g(this,b,d,h)});else if(1===c.nodeType){var m=h[e]?{valueIdentifier:!0}:{},k=c.nodeName,n=!0==d.namespaces?!0:!1,l={};-1!=k.indexOf(":")&&(m[k.substr(0,k.indexOf(":"))]=!0);$.each(c.attributes,function(){var b=this.nodeName,c=this.nodeValue;a.options.filter&&(c=a.options.filter(c));a.options.detectTypes&&(c=a.detectTypes(c));"xmlns"===b?(h[e]=c,m[e]=!0):0===b.indexOf("xmlns:")?h[b.substr(b.indexOf(":")+1)]=c:-1!=b.indexOf(":")? (l[f+b]=c,m[b.substr(0,b.indexOf(":"))]=!0):l[f+b]=a.options.emptyValuesAsNull&&(""===c||null===c)?null:c});var p=n?h:m;$.each(p,function(a,b){p.hasOwnProperty(a)&&(l[f+"xmlns"]=l[f+"xmlns"]||{},l[f+"xmlns"][a]=b)});b[k]instanceof Array?b[k].push(l):b[k]=b[k]instanceof Object?[b[k],l]:l;a.options.emptyValuesAsNull&&0==c.childNodes.length&&(b[k]=null);$.each(c.childNodes,function(){g(this,l,d,h)})}else 3===c.nodeType&&(c=c.nodeValue,c.match(/[\S]+/)&&(a.options.filter&&(c=a.options.filter(c)),a.options.detectTypes&& (c=a.detectTypes(c)),b[e]instanceof Array?b[e].push(c):b[e]=b[e]instanceof Object?[b[e],c]:c))})(this.document,this.json,this.options,{})};this.modifyJSON=function(){var a=this,j=this.options.attributeIdentifier;$.each(this.options.modify,function(g,c){var b=g.match(/\.\*$/)?!0:!1;g=b?g.replace(/\.\*$/,""):g;var d=a.find(g);if(d){var h=c.replace(/\.[^\.]*$/,""),e=1<c.split(".").length?h+'["'+c.split(".")[c.split(".").length-1]+'"]':c;b||a.remove(g);1<h.split(".").length&&a.createNodes(h);a.createNodes(c); b?(e=e.match(/\[\"\"\]/)?"":e+".",$.each(d,function(a){a[0]!=j&&eval("_this.json."+e+a+" = value")}),$.each(a.find(g),function(b){b[0]!=j&&a.remove(g+"."+b)})):eval("_this.json."+e+" = content");if(a.options.clearEmptyNodes){var d=b?a.find(g):a.find(g.replace(/\.[^\.]*$/,"")),f=!0;$.each(d,function(b,c){if(c instanceof Object){var d=0,e;for(e in c)d++;if(1<d||1==d&&!a.options.namespaces)return f=!1}if(b[0]!=j)return f=!1});f&&(b?a.remove(g):a.remove(g.replace(/\.[^\.]*$/,"")))}}})};this.createNodes= function(a){var j=this;this.get(a,!1)||function c(a,d){if(a.split(".")[d]){for(var h=[],e=0;e<=d;e++)h.push(a.split(".")[e]);h=h.join(".");j.get(h,!1)||eval("_this.json."+h+"={}");c(a,d+1)}}(a,0)};this.get=function(a,j){var g=this;j=!1==j?!1:!0;var c=this.json;a=a.replace(/^\./,"");var b="",d=null;(function e(f,j){if(d=a.split(".")[f]){b+=0===f?d:"."+d;c=d.match(/\[*.\]$/)?c[d.split("[")[0]][d.match(/\[([^\]]*)/)[1]]:c[d];if(!c)return!0===j&&(a===b?g.throwError("Invalid path "+a):g.throwError('Invalid part "'+ b+'" in path "'+a+'"')),c;e(f+1,j)}})(0,j);return c};this.find=function(a,j){function g(a,b){var d="",e=[];$.each(b.split("."),function(b){var f=[];if(0==b)d=this,f=a;else if(d+="."+this,this.match(/\[*.\]$/))f=e[this.split("[")[0]][this.match(/\[*.\]$/)[0].replace(/[\[|\]]/g,"")];else if(e instanceof Array){var g=this;$.each(e,function(){this instanceof Array?$.each(this,function(){void 0!=this[g]&&f.push(this[g])}):void 0!=this[g]&&f.push(this[g])})}else f=e[this];if(!f||0==f.length)return c.throwError("Invalid path "+ d),e=[],!1;e=f});return e}var c=this,b=[];a.split(".")[0].match(/\[*.\]$/)?(b=a.split(".")[0].match(/\[*.\]$/)[0].replace(/[\[|\]]/g,""),b=this.json[a.split(".")[0].replace(/\[.*\]/,"")][b]):b=this.json[a.split(".")[0]];b=g(b,a);if(j){var d=function(a,b,c){if(a&&b&&c){if("=~"===b)return b="",c.match(/^\/.*/)&&c.match(/\/.$/)&&(b=c[c.length-1],c=c.substring(0,c.length-1)),c=c.replace(/^\//,"").replace(/\/$/,""),a.toString().match(RegExp(c,b))?!0:!1;if("=="===b||"!="===b)return eval("element.toString()"+ b+"rule")?!0:!1;parseInt(c);parseInt(a);return eval("element"+b+"rule")?!0:!1}},h=[],e=j.replace(/^.*(==|\>=|\<=|\>|\<|!=|=~)/,""),f=j.replace(/(==|\>=|\<=|\>|\<|!=|=~).*$/,"").replace(/\s$/,""),m=j.replace(e,"").replace(f,"").replace(/\s/,""),k=f.split(".")[f.split(".").length-1];k===f&&(f=null);if(b instanceof Array)f?$.each(b,function(){var a=g(this,"."+f),b=this;a instanceof Array?$.each(a,function(){if(d(this,m,e))return h.push(b),!1}):d(a,m,e)&&h.push(this)}):$.each(b,function(){d(this[k],m, e)&&h.push(this)}),b=h;else if(f){var n=g(b,"."+f),n=g(b,"."+f),l=!1;n instanceof Array?$.each(n,function(){if(d(this,m,e))return l=!0,!1}):d(n,m,e)&&(l=!0);b=l?b:null}else d(b[k],m,e)||(b=null)}return!b?[]:b};this.remove=function(a){this.get(a)&&(eval("delete this.json."+a),a.match(/\[*.\]$/)&&($.grep(eval("_this.json."+a.replace(/\[*.\]$/,"")),function(a){return a}),eval("_this.json."+a.replace(/\[*.\]$/,"")+" = filterNull")))};this.detectTypes=function(a){return a.match(/^true$/i)?!0:a.match(/^false$/i)? !1:a.match(/^null|NaN|nil|undefined$/i)?null:a.match(/^[0-9]*$/i)?parseInt(a):a};this.throwError=function(){this.options.log&&!window.console&&(window.console={log:function(a){alert(a)}})};this.init()};
 
     }()),
@@ -144,22 +122,20 @@
                 registerMods = [],
                 define = K.module.define,
                 prop,
-                emptyObj = $.isEmptyObject,
                 inArr = $.inArray;
 
                 //use cfg to update mod configs using alias object
-                if ( typeof cfg.config === "object" && !emptyObj( aliases ) ) {
+                if ( _.isObject( cfg.config) && !_.isEmpty( aliases ) ) {
 
                 	_.each( cfg.config, function( aliasObj, aliasGroup ) {
                 		aliasGroup = trim( aliasGroup );
 
-                		if ( (aliasGroup in aliases) && !emptyObj( aliasObj )) {
+                		if ( (aliasGroup in aliases) && !_.isEmpty( aliasObj )) {
 
                 			_.each( aliasObj, function( aliasValue, aliasKey ){
                 				var ln;
                 				aliasKey = trim( aliasKey );
                 				if ( aliasKey in aliases[aliasGroup]) {
-
                 					ln = aliases[aliasGroup][aliasKey];
                 					ln[0][ln[1]] = aliasValue;
                 				}
@@ -177,6 +153,7 @@
                         define( prop, modules[prop].module );
                         registerMods.push({ type : prop, id : prop });
                     }
+                    else delete modules[prop];
                 }
 
                 K.register( registerMods );
@@ -185,16 +162,14 @@
             },
 
             appify : function ( prefix, arr ) {
-                var prop, i, l, ret = {};
+                var ret = {};
 
                 prefix = trim( prefix );
 
-                i = 0;
-                l = arr.length;
-                for ( ; i < l; i += 1 ) {
-                	arr[i] = trim( arr[i] );
-                	ret[ arr[i] ] = prefix + "_" + arr[i];
-                }
+                _.each( arr, function( v, i ){
+                	v = trim( v );
+                	ret[ v ] = prefix + "_" + v;
+                });
 
                 return ret;
             } 
@@ -244,14 +219,6 @@
             ajax : function ( o ) {
                 var def = { type : "POST" };
                 return $.ajax( $.extend( def, o ) );
-            },
-
-            isType : function (type, o) {
-                return o && typeof o === trim( type ); 
-            },
-
-            arr2Str : function ( arr ) {
-                return arr.join("");
             },
 
             add_QS_Params : function ( qStr, param ) {
@@ -305,12 +272,12 @@
                 return data;
     		},
 
-    		loadScript : function ( url, callback ) {
+    		loadScript : function ( url, cb ) {
     			var 
-    			script, cb;
+    			script, _cb;
 
-    			cb = function () {
-    				if (typeof callback === "function") callback();
+    			_cb = function () {
+    				if (typeof cb === "function") cb();
     			};
 
     			script = document.createElement("script")
@@ -320,15 +287,11 @@
     		        script.onreadystatechange = function() {
     		            if ( script.readyState == "loaded" || script.readyState == "complete" ) {
     		                script.onreadystatechange = null;
-    		                cb();
+    		                _cb();
     		            }
     		        };
     		    } 
-    		    else {
-    		        script.onload = function() {
-    		            cb();
-    		        };
-    		    }
+    		    else script.onload = _cb;
 
     		    script.src = url;
     		    document.getElementsByTagName("head")[0].appendChild( script );	
