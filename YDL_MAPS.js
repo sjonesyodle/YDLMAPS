@@ -965,38 +965,46 @@
             config : {
 
                 nodes : {
-                    absNode : "",
-                    relNode : ""
+                    absNode    : "",
+                    relNode    : "",
+                    pluralLocs : ""
                 },
 
                 lockAttr : "lock"
             },
 
             aliases : ["locCounter", {
-            	absNode : "nodes.absNode",
-            	relNode : "nodes.relNode"
+            	absNode    : "nodes.absNode",
+            	relNode    : "nodes.relNode",
+            	pluralLocs : "nodes.pluralLocs"
             }],
 
             module : {
 
                 init: function() {
-                    var 
-                    _I     = this,
-                    nodes  = this.config.nodes,
-                    isNode = K.Util.isNode; 
+                    var _I = this;
 
-                    nodes.absNode = $( nodes.absNode );
-                    nodes.relNode = $( nodes.relNode );
-
-                    if ( !(isNode(nodes.absNode) || isNode(nodes.relNode)) ) return;
-
-                    _I.render();
+                    _I.build();
                     _I.update();
 
-                    _I.hub.listen(MSGS.loc_data_sorted, function(hideFlag) {
+                    _I.hub.listen( MSGS.loc_data_sorted, function( hideFlag ) {
                         _I.hideFlag = hideFlag;
                         _I.update();
                     });
+                },
+
+                build : function () {
+                	var 
+                	nodes  = this.config.nodes,
+                	isNode = K.Util.isNode;
+
+                	this.render();
+
+                	_.each( nodes, function( node, key, all ){
+                		node = $( node );
+                		if ( isNode( node ) ) all[key] = node;
+                		else delete all[key];
+                	});
                 },
 
                 update : function () {
@@ -1021,15 +1029,11 @@
                         },
 
                         relNode : function () {
-                            var i, l, x, hideFlag = _I.hideFlag;
+                            this.text( _I.totalShownLocs() ); 
+                        },
 
-                            i = x = 0;
-                            l = _I.totalLocs();
-                            for ( ; i < l; i += 1 ) {
-                                x += !!K.LOC_DATA[ i ][ hideFlag ] ? 0 : 1;
-                            }
-
-                            this.text( x ); 
+                        pluralLocs : function () {
+                        	this.text( _I.totalShownLocs() > 1 ? "s" : "" );
                         }
                     };
                     
@@ -1041,6 +1045,18 @@
 
                 totalLocs : function () {
                     return Kernel.LOC_DATA.length;
+                },
+
+                totalShownLocs : function () {
+                	var i, l, x, hideFlag = this.hideFlag;
+
+	                i = x = 0;
+	                l = this.totalLocs();
+	                for ( ; i < l; i += 1 ) {
+	                    x += !!K.LOC_DATA[ i ][ hideFlag ] ? 0 : 1;
+	                }
+
+	                return x;
                 }
 
             }
@@ -1313,13 +1329,17 @@
                 messages : {
                     searchError : "Invalid Search Term",
                     noResults   : "No Results"
-                },
+                }, 
 
                 coordKeys : {
                 	lat : "_lat",
                 	lng : "_lng"
                 }
             },
+
+            aliases : ["radius", {
+            	distance : "boundary"
+            }],
 
             module : {
 
@@ -1329,15 +1349,10 @@
                     B( MSGS.docready_loclist, true );
 
                     L( MSGS.gmap_dom_ready, function(){
-
                         _I.GMAP_GEOCODER = new google.maps.Geocoder();
-
                         B( MSGS.docready_markers, true );
-
                         B( MSGS.search_model_ready );
-
                         L( MSGS.user_search_request, _I.geoCodeSearch);
-
                     });
                 },
 

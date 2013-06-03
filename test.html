@@ -19,7 +19,7 @@
 
 
 <p>Total Locs (static) : <span class="totalLocs_abs"></span></p>
-<p>Total Locs (relative) : <span class="totalLocs_rel"></span></p>
+<p>Total Locs (relative) : <span class="totalLocs_rel"></span> Location<span class="pluralLocs"></span></p>
 
 <label for="">Search</label>
 <input type="text" class="searchInput" />
@@ -57,6 +57,10 @@
 	            lat     : 0,
 	            lng     : 0,
 	            zoom    : 8
+	        },
+
+	        radius : {
+	        	distance : 1
 	        },
 	        
 	        "locData" : {
@@ -97,13 +101,12 @@
 	        
 	        "locCounter" : {
 	            absNode : ".totalLocs_abs",
-	            relNode : ".totalLocs_rel"
+	            relNode : ".totalLocs_rel",
+	            pluralLocs : ".pluralLocs"
 	        },
 	        
 	        "templates" : {
-
 	            file : "templates.html"
-
 	        }
 	    }
 	});
