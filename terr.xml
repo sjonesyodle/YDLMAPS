@@ -2,23 +2,6 @@
 <serviceAreas>
 <serviceArea id="1" name="Bark Busters Houston Northwest" address="15506 Scenic Point Court" city="Cypress" state="TX" zip="77433" phone="281-810-9517" url="http://www.barkbusters-northandwesthouston.com?jagId=509" lat="29.999952" lng="-95.736961">
 <zip code="77040"/>
-<zip code="77041"/>
-<zip code="77064"/>
-<zip code="77065"/>
-<zip code="77070"/>
-<zip code="77084"/>
-<zip code="77095"/>
-<zip code="77095"/>
-<zip code="77375"/>
-<zip code="77377"/>
-<zip code="77380"/>
-<zip code="77381"/>
-<zip code="77389"/>
-<zip code="77429"/>
-<zip code="77433"/>
-<zip code="77449"/>
-<zip code="77532"/>
-<zip code="77562"/>
 </serviceArea>
 
 <serviceArea id="2" name="Bark Busters Montgomery County" address="1810 Ranch Trail Court" city="Magnolia" state="TX" zip="77354" phone="936-681-9402" url="http://www.barkbusters-montgomeryco.com?jagId=509" lat="30.244272" lng="-95.561420">

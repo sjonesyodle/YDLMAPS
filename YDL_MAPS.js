@@ -1553,6 +1553,7 @@
                 	VIEWSTATE.clear();
 
                 	_.each( K.LOC_DATA, function( loc, i ) {
+
                 		loc[ _I.config.hideFlag ] = !_I.codeMatch( loc[ codeArrKey ] ) ? true : false;
                 		( !!loc[ _I.config.hideFlag ] ? VIEWSTATE.hidden( loc ) : VIEWSTATE.shown( loc ) );
                 	});
@@ -1563,7 +1564,7 @@
                 codeMatch : function ( zipObjArr ) {
                 	var _I = this;
                 	return _.find( zipObjArr, function( v ){
-                		return v._code === _I.userSearch;
+                		return v._code === _I.userSearch || v === _I.userSearch;
                 	});
                 },
 
