@@ -1395,16 +1395,23 @@
                 },
 
                 flagOutOfBoundsLocs : function () {
-                    var _I = this;
-    
+                    var _I = this, VIEWSTATE  = K.GMARKERS_VIEWSTATE;
+    	
+    				VIEWSTATE.clear();
                     _I.hiddenLocs = 0;
 
                     _.each( K.LOC_DATA, function( o ) {
                     	o[ _I.config.hideFlag ] = _I.checkRadius( o );
-                    	if ( o[ _I.config.hideFlag ] ) _I.hiddenLocs += 1;
+
+                    	if ( o[ _I.config.hideFlag ] ) {
+                    		_I.hiddenLocs += 1;
+                    		VIEWSTATE.hidden( o );
+                    	}
+                    	else VIEWSTATE.shown( o );
+
                     });
 
-                    Kernel.TOTAL_SHOWN_MARKERS = _I.hiddenLocs;
+
                     return _I;
                 },
 
@@ -1527,10 +1534,14 @@
                 },
 
                 build : function () {
-                    this.checkTerritory()
-                    .locFound()
-                    .sort()
-                    .complete();
+                    this.checkTerritory();
+
+                    if ( this.locFound() ) {
+                    	this
+                    	.sort()
+                   		.complete();
+                    }
+                    
                 },
 
                 checkTerritory : function () {
@@ -1540,6 +1551,7 @@
                 	VIEWSTATE  = K.GMARKERS_VIEWSTATE;
 
                 	VIEWSTATE.clear();
+
                 	_.each( K.LOC_DATA, function( loc, i ) {
                 		loc[ _I.config.hideFlag ] = !_I.codeMatch( loc[ codeArrKey ] ) ? true : false;
                 		( !!loc[ _I.config.hideFlag ] ? VIEWSTATE.hidden( loc ) : VIEWSTATE.shown( loc ) );
@@ -1578,10 +1590,11 @@
 
                 locFound : function () {
                     if ( K.GMARKERS_VIEWSTATE.report().hidden.length === K.LOC_DATA.length ) {
-                        this.triggerError( this.config.messages.noResults ); 
+                        this.triggerError( this.config.messages.noResults );
+                        return false; 
                     }
 
-                    return this;
+                    return true;
                 },
 
                 sort : function () {
