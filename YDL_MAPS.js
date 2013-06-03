@@ -836,7 +836,7 @@
             	markerKey : "marker",
             	iconKey   : "icon",
 
-            	userMarkerZ : false 
+            	userMarkerZ : true 
 
             },
 
@@ -941,7 +941,7 @@
                     K.USER_COORDS_MARKER = this.makeGMarker( K.USER_COORDS_MARKER );
 
                     if ( this.config.userMarkerZ ) {
-                    	K.USER_COORDS_MARKER.setZIndex( google.maps.Marker.MAX_ZINDEX );
+                    	K.USER_COORDS_MARKER.setZIndex( google.maps.Marker.MAX_ZINDEX - google.maps.Marker.MAX_ZINDEX );
                     }
 
                     return this;
