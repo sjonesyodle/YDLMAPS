@@ -1548,14 +1548,28 @@
                 	var 
                 	_I         = this,
                 	codeArrKey = _I.config.codeType,
-                	VIEWSTATE  = K.GMARKERS_VIEWSTATE;
+                	VIEWSTATE  = K.GMARKERS_VIEWSTATE,
+                	foundLoc, foundLocIdx = -1;
 
                 	VIEWSTATE.clear();
 
+                	foundLoc = _.find( K.LOC_DATA, function( loc, i ){
+                		foundLocIdx = i;
+                		return _I.codeMatch( loc[ codeArrKey ] );
+                	});
+
+
                 	_.each( K.LOC_DATA, function( loc, i ) {
 
-                		loc[ _I.config.hideFlag ] = !_I.codeMatch( loc[ codeArrKey ] ) ? true : false;
-                		( !!loc[ _I.config.hideFlag ] ? VIEWSTATE.hidden( loc ) : VIEWSTATE.shown( loc ) );
+                		if ( foundLoc && i === foundLocIdx ) {
+                			loc[ _I.config.hideFlag ] = false;
+                			VIEWSTATE.shown( loc );
+                		} 
+                		else {
+                			loc[ _I.config.hideFlag ] = true;
+                			VIEWSTATE.hidden( loc );
+                		}
+
                 	});
 
                 	return _I;
