@@ -1487,6 +1487,11 @@
 
                 hideFlag : "hide",
 
+                redirect : {
+                	onSuccess : false,
+                	uriProp   : "_url"
+                },
+
                 codeType : {
                 	zip    : true,
                 	postal : false
@@ -1499,6 +1504,10 @@
                 }
 
             },
+
+            aliases : ["territory", {
+            	redirectOnSuccess : "redirect.onSuccess"
+            }],
 
             module : {
 
@@ -1636,8 +1645,21 @@
                 },
 
                 complete : function () {
+
+                	if ( !!this.config.redirect.onSuccess ) {
+                		this.redirect();
+                		return;
+                	}
+
                     this.hub.broadcast( MSGS.loc_data_sorted, this.config.hideFlag );
                     return this;
+                },
+
+                redirect : function () {
+                	var 
+                	targetLoc = K.GMARKERS_VIEWSTATE.report().shown[0],
+                	uriProp   = this.config.redirect.uriProp;
+                	if ( uriProp in targetLoc ) window.location = targetLoc[ uriProp ];
                 }
 
             }

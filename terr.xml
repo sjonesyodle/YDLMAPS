@@ -5,6 +5,7 @@
 </serviceArea>
 
 <serviceArea id="2" name="Bark Busters Montgomery County" address="1810 Ranch Trail Court" city="Magnolia" state="TX" zip="77354" phone="936-681-9402" url="http://www.barkbusters-montgomeryco.com?jagId=509" lat="30.244272" lng="-95.561420">
+<zip duptest="true" code="77040"/>
 <zip code="77032"/>
 <zip code="77039"/>
 <zip code="77044"/>
