@@ -1506,7 +1506,9 @@
             },
 
             aliases : ["territory", {
-            	redirectOnSuccess : "redirect.onSuccess"
+            	redirectOnSuccess : "redirect.onSuccess",
+            	zip : "codeType.zip",
+            	postal : "codeType.postal"
             }],
 
             module : {
