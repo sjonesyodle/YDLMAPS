@@ -700,12 +700,36 @@
             			img : "", 
 
             			sorting  : {
-            				alpha : false,
-            				numeric : false
-            			}
+            				alpha   : false,
+            				numeric : false,
+            				img     : false
+            			},
+
+            			imgSortMap   : {
+            				alphaLower : {
+            					key   : "{a}",
+            					alias : "alpha",
+            					casing : "toLowerCase"
+            				},
+
+            				alphaUpper : {
+            					key   : "{A}",
+            					alias : "alpha",
+            					casing : "toUpperCase"
+            				},
+
+            				num : {
+            					key   : "{#}",
+            					alias : "num" 
+            				}
+            			},
+
+		            	imgSortKeyDef : "num",
+		            	imgSortDefExt : ".png"
             		}
             	},
 
+            	
             	styleKey   : "{{style}}",
             	HEX_MARKER : "https://chart.googleapis.com/chart?chst=d_map_pin_letter&chld={{style}}"
             },
@@ -719,6 +743,8 @@
         		locsHexBG  : "markers.locs.hex.bgclr",
         		locsHexTxt : "markers.locs.hex.txtclr",
         		locsImgSrc : "markers.locs.img",
+
+        		locSortImg : "markers.locs.sorting.img",
         		locsSortAlpha : "markers.locs.sorting.alpha",
         		locsSortNum : "markers.locs.sorting.numeric"
             }],
@@ -773,11 +799,20 @@
         					_.each( locList, function( loc, i ){
         						loc[ updateProp ] = _I.buildHex( locsCfg, ( i + 1 ).toString() );
         					});
+        				},
+
+        				img : function ( locList, updateProp ) {
+        					_.each( locList, function( loc, i ){
+        						loc[ updateProp ] = _I.buildSortedImg({
+        							num   : ( i + 1 ).toString(),
+        							alpha : alphabet[ i ]
+        						});
+        					});
         				}
             		},
 
-            		sorting,
-            		use = locsCfg.use ? trim( locsCfg.use ) : null; 
+            		sorting = K.Util.hasBoolProp( locsCfg.sorting, true, true ),
+            		use     = locsCfg.use ? trim( locsCfg.use ) : null;
 
             		// def
             		if ( !use ) {
@@ -786,19 +821,21 @@
             		}
 
             		// img
-            		if ( use === "img" ) {
+            		if ( use === "img" && sorting !== "img" ) {
             			markers.locs = this.buildMap[ use ]( locsCfg );
             			return;
-            		}	
+            		}
+            		else if ( use === "img" && sorting === "img" ) {
+            			this.buildSortedImg();
+            		}
 
             		// return sort method
-            		sorting = K.Util.hasBoolProp( locsCfg.sorting, true, true );
             		if ( sorting && sortFuncs[ sorting ] ) {
             			markers.locs = sortFuncs[ sorting ];
             			return;
             		}
 
-            		//basic hex
+            		//basic hex 
             		markers.locs = this.buildMap[ trim( use ) ]( locsCfg );
             		return;
             	},
@@ -812,7 +849,38 @@
             		return trim( cfg.img );
             	},
 
+            	buildSortedImg : function () {
+            		var
+            		cfg       = this.config.markers.locs
+            		img       = cfg.img, 
+            		imgMap    = cfg.imgSortMap,
+            		defSort   = cfg.imgSortKeyDef,
+            		defExt    = cfg.imgSortDefExt,
+            		imgKey    = (function(){
+            			var i;
+
+            			for ( i in imgMap ) {
+            				if ( img.indexOf( imgMap[i].key ) > -1 ) {
+            					return imgMap[i];
+            				}	
+            			}
+
+            			img += imgMap[ defSort ].key + defExt;
+            			return imgMap[ defSort ];
+            		}());
+
+            		this.buildSortedImg = function ( cfg ) {
+            			var _img = img, val = cfg[ imgKey.alias ];
+
+            			if ( imgKey.casing ) val = val[imgKey.casing]();
+
+						return _img.replace( imgKey.key, val );
+            		};
+            		
+            	},
+
             	complete : function () {
+            		// value with either be string or func to be parsed by another module
             		Kernel.Bank.add( this.id, "marker_styles", this.config.markers );
             	}
 

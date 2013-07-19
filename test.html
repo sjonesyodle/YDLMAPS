@@ -37,7 +37,7 @@
 	//example instance
 	YDLMAPS({
 	    use : [
-	        "TERRITORY", // (required), options -> RADIUS or TERRITORY
+	        "RADIUS", // (required), options -> RADIUS or TERRITORY
 	        "INFO_WINDOWS",
 	        "TOTAL_LOCS",
 	        "LIST_VIEW",
@@ -70,7 +70,7 @@
 	        },
 	        
 	        "locData" : {
-	            file : "terrCan.xml"
+	            file : "rad.xml"
 	        },
 	        
 	        "locListView" : {
@@ -96,12 +96,14 @@
 	            userHexBG  : "666666",
 	            userImgSrc : "",
 	            
-	            locsType   : "hex",
+	            locsType   : "img",
 	            locsHexBG  : "D96666",
 	            locsHexTxt : "FFFFFF",
-	            locsImgSrc : "",
+	            locsImgSrc : "icons/lowerletters/letter_{a}.png",
+
+	            locSortImg    : true,
 	            locsSortAlpha : false,
-	            locsSortNum   : true
+	            locsSortNum   : false
 
 	        },
 	        

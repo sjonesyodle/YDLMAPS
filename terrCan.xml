@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <serviceAreas>
 	<serviceArea id="1" name="Test 1" address="1200 Colville Road" city="Victoria" state="BC" postal="V9A 7N2" phone="123-456-7890" url="http://www.yodle.com" lat="48.438376" lng="-123.415711">
-		<postal code="V9A" />
+		<postal code="A9A 1A1" />
 	</serviceArea>
 	<serviceArea id="2" name="Test 2" address="2202 2 Street SW" city="Calgary" state="AB" postal="T2S 3C1" phone="123-456-7890" url="http://www.yodle.com" lat="51.033251" lng="-114.068223">
 		<postal code="T2S" />
