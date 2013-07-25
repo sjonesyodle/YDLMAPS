@@ -1,3 +1,5 @@
+// 01
+
 ;(function( $, window, undefined ){
 
     var
@@ -19,539 +21,34 @@
           evaluate: /\{\{(.+?)\}\}/g
         };
 
-    	$.fn.nodeListener = function ( o ) {
-              var hn, i, len, self = this;
-              i   = 0;
-              len = parseInt(o.tries, 10);
-
-              hn  = setInterval(function(){
-
-                   var _cn = self.find(o.cn);
-                   if (i >= len) {
-                        clearInterval(hn);
-                        return false;
-                   }
-                   if (_cn.length > 0) {
-                        o.cb.call(_cn[0]);
-                        clearInterval(hn);
-                        return;
-                   }
-                   i += 1;
-
-              }, o.interval);
-        };
-
-        $.XMLtoJSON = function( options ){
-       
-            // Define Initialization
-            this.init = function(){
-              
-              this.xml = false,
-              this.document = false;
-              this.json = {};
-              this.duration = new Date();
-              
-              // Merge options with defaults
-              this.options = $.extend({
-                 url: false,
-                 xmlString: false,
-                 namespaces: false,
-                 valueIdentifier: '$',
-                 attributeIdentifier: '_',
-                 emptyValuesAsNull: false,
-                 modify: {},
-                 clearEmptyNodes: false,
-                 cache: false,
-                 detectTypes: false,
-                 filter: null,
-                 fallback: null,
-                 log: false
-              }, options);
-              
-              // Get XML as string
-              if(this.options.url) this.receiveXML();
-              if(this.options.xmlString) this.xml = this.options.xmlString;
-              
-              if(this.xml){
-              
-                 // Build XML DOM
-                 this.parseXML();
-                 
-                 // Get JSON
-                 this.convertXML();
-                 
-                 // Throw fallback method if JSON is empty or invalid
-                 if(this.options.fallback != null && (this.json == {} || this.json.parsererror)) this.options.fallback({message : 'XML is invalid', code : 500});
-              
-                 // Modify JSON
-                 this.modifyJSON();
-              }
-
-              // Time taken
-              this.duration = new Date() - this.duration + ' ms';
-            }
-
-            // Get XML as text from a external url
-            this.receiveXML = function(){
-              var url = this.options.url,
-                    response;
-              $.ajax({
-                 type: 'GET',
-                 url: url,
-                 async: false,
-                 dataType: 'text',
-                 cache: this.options.cache,
-                 complete: function(data){
-                    if(data.responseText) response = data.responseText.replace(/^\s+/, '');
-                 }
-              });
-              if(response){
-                 this.xml = response;
-              }
-              else{
-                 this.throwError('Cannot receive XML from ' + this.options.url);
-                 if(this.options.fallback != null) this.options.fallback({message : 'Cannot receive XML from ' + this.options.url, code : 404});
-              }
-            }
-
-            // Parse XML
-            this.parseXML = function(){
-              this.xml = this.xml.replace(/^[\s\n\r\t]*[<][\?][xml][^<^>]*[\?][>]/, '');
-              if(window.ActiveXObject){
-                 this.document = new ActiveXObject('Microsoft.XMLDOM');
-                 this.document.async = false;
-                 this.document.loadXML(this.xml);
-              }
-              else{
-                 this.document = new DOMParser();
-                 this.document = this.document.parseFromString(this.xml, 'application/xml');
-              }
-              if(!this.xml || !this.document) this.throwError('Cannot parse XML');
-            }
-
-            // Convert XML to JSON (inner closure, recursive)
-            // Increase performance by replace jQuery.each with native Javascript for-loop (should be 2-3 times faster, depeding von the Document size)
-            this.convertXML = function(){
-              var _this = this;
-              (function evaluate(node, obj, options, ns) {
-                 
-                 // Node value valueIdentifier
-                 var valueIdentifier = options.valueIdentifier,
-                       attributeIdentifier = options.attributeIdentifier;
-                 
-                 // Document node
-                 if(node.nodeType === 9){
-                    $.each(node.childNodes, function(){
-                       evaluate(this, obj, options, ns);
-                    });
-                 }
-              
-                 // Element node
-                 else if (node.nodeType === 1){
-                 
-                    // Set active namespace to {valueIdentifier : true} if ns.$ is set
-                    var activeNamespace = ns[valueIdentifier] ? { valueIdentifier : true } : {};
-                    // Current node name
-                    var nodeName = node.nodeName;
-                    // Add namespaces
-                    var addNamespaces = options.namespaces == true ? true : false;
-                    // Current
-                    var current = {};
-                    // Namespace
-                    if (nodeName.indexOf(':') != -1) activeNamespace[nodeName.substr(0, nodeName.indexOf(':'))] = true;
-                    
-                    // Attributes
-                    $.each(node.attributes, function(){
-                       var name = this.nodeName;
-                       var value = this.nodeValue;
-                       if(_this.options.filter) value = _this.options.filter(value);
-                       if(_this.options.detectTypes) value = _this.detectTypes(value);
-                       
-                       if(name === 'xmlns'){ // general namespace
-                          ns[valueIdentifier] = value;
-                          activeNamespace[valueIdentifier] = true;
-                       }
-                       else if(name.indexOf('xmlns:') === 0){ // specific regular namespace
-                          ns[name.substr(name.indexOf(':') + 1)] = value;
-                       }
-                       else if(name.indexOf(':') != -1){  // some other namespace type - may throw a parsererror before 
-                          current[attributeIdentifier + name] = value;
-                          activeNamespace[name.substr(0, name.indexOf(':'))] = true;
-                       }
-                       else{ // regular attribute
-                          if(_this.options.emptyValuesAsNull && (value === '' || value === null)){
-                             current[attributeIdentifier + name] = null;
-                          }
-                          else{
-                             current[attributeIdentifier + name] = value; 
-                          }
-                       }
-                    });
-                    
-                    // Add namespaces
-                    var namespace = addNamespaces ? ns : activeNamespace;
-                    $.each(namespace, function(key, value){
-                       if(namespace.hasOwnProperty(key)){
-                          current[attributeIdentifier + 'xmlns'] = current[attributeIdentifier + 'xmlns'] || {};
-                          current[attributeIdentifier + 'xmlns'][key] = value;
-                       }
-                    });
-                    
-                    // Add
-                    if(obj[nodeName] instanceof Array){
-                       obj[nodeName].push(current);
-                    }
-                    else if(obj[nodeName] instanceof Object){
-                       obj[nodeName] = [obj[nodeName], current];
-                    }
-                    else{
-                       obj[nodeName] = current;
-                    }
-                    if(_this.options.emptyValuesAsNull && node.childNodes.length == 0){
-                       obj[nodeName] = null;
-                    }
-                    
-                    // Recursion
-                    $.each(node.childNodes, function(){
-                       evaluate(this, current, options, ns);
-                    });
-                 }
-              
-                 // Text node
-                 else if(node.nodeType === 3){
-                    var value = node.nodeValue;
-                    if(!value.match(/[\S]+/)) return; // Whitespace
-                    if(_this.options.filter) value = _this.options.filter(value);
-                    if(_this.options.detectTypes) value = _this.detectTypes(value);
-                    // Add
-                    if(obj[valueIdentifier] instanceof Array){
-                       obj[valueIdentifier].push(value);
-                    }
-                    else if(obj[valueIdentifier] instanceof Object){
-                       obj[valueIdentifier] = [obj[valueIdentifier], value];
-                    }
-                    else{
-                       obj[valueIdentifier] = value;
-                    }
-                 }
-
-              })(this.document, this.json, this.options, {}); // Execute
-            }
-
-            // Modify JSON
-            this.modifyJSON = function(){
-              var _this = this,
-                    attributeIdentifier = this.options.attributeIdentifier;
-              $.each(this.options.modify, function(url, modified){
-                 // var content = _this.get(url);
-                 // TODO _this.remove(url) does not work for Array elements which are selected by find without array brackets
-                 var all = url.match(/\.\*$/) ? true : false;
-                 var url = all ? url.replace(/\.\*$/, '') : url;
-                 var content = _this.find(url);
-                 if(content){
-                    var newParent = modified.replace(/\.[^\.]*$/,'');
-                    if(modified.split('.').length > 1){
-                       var newNode = newParent + '["' + modified.split('.')[modified.split('.').length-1] + '"]';
-                    }
-                    else{
-                       var newNode = modified;
-                    }
-                    if(!all) _this.remove(url);
-                    if(newParent.split('.').length > 1) _this.createNodes(newParent);
-                    _this.createNodes(modified);
-                    if(all){
-                       newNode = newNode.match(/\[\"\"\]/) ? '' : (newNode + '.');
-                       $.each(content, function(key, value){
-                          if(key[0] != attributeIdentifier) eval('_this.json.' + newNode + key + ' = value');
-                       });
-                       $.each(_this.find(url), function(key, value){
-                          if(key[0] != attributeIdentifier) _this.remove(url + '.' + key);
-                       });
-                    }
-                    else{
-                       eval('_this.json.' + newNode + ' = content');
-                    }
-                    if(_this.options.clearEmptyNodes){
-                       var parentNode = all ?  _this.find(url) : _this.find(url.replace(/\.[^\.]*$/, ''));
-                       var emptyNodes = true;
-                       $.each(parentNode, function(key, value){
-                          if(value instanceof Object){
-                             var children = 0;
-                             for (var i in value) children++;
-                             if(children > 1 || children == 1 && !_this.options.namespaces) return emptyNodes = false;
-                          }
-                          if(key[0] != attributeIdentifier) return emptyNodes = false;
-                       });
-                       if(emptyNodes){
-                          all ? _this.remove(url) : _this.remove(url.replace(/\.[^\.]*$/,''));
-                       }
-                    }
-                 }
-              });
-            }
-
-            // Create a all parts of a non existing node tree
-            this.createNodes = function(string){
-              var _this = this;
-              var node = this.get(string, false);
-              if(node) return;
-              (function checkNode(url, index){
-                 var current = url.split('.')[index];
-                 if(!current) return;
-                 var partUrl = [];
-                 for(var i=0; i<=index; i++){
-                    partUrl.push(url.split('.')[i]);
-                 }
-                 partUrl = partUrl.join('.');
-                 var part = _this.get(partUrl, false);
-                 if(!part) eval('_this.json.' + partUrl + '={}');
-                 checkNode(url, index+1);
-              })(string, 0);
-            }
-
-            // Get JSON by a full identifiable String splitted by '.'
-            this.get = function(path, log){
-              var _this = this,
-                    log = (log == false) ? false : true,
-                    target = this.json,
-                    path = path.replace(/^\./, ''),
-                    currentPath = '',
-                    tempPath = null;
-              (function select(index, log){
-                 tempPath = path.split('.')[index];
-                 if(tempPath){
-                    currentPath += index === 0 ? tempPath : ('.' + tempPath);
-                    target = tempPath.match(/\[*.\]$/) ? target[tempPath.split('[')[0]][tempPath.match(/\[([^\]]*)/)[1]] : target[tempPath];
-                    if(!target){
-                       if(log === true){
-                          path === currentPath ? _this.throwError('Invalid path ' + path) : _this.throwError('Invalid part "' + currentPath + '" in path "' + path + '"');
-                       }
-                       return target;
-                    }
-                    select(index+1, log);
-                 }
-              })(0, log);
-              return target;
-            }
-
-            // Find each JSON element by a given String splitted by '.' and additional conditions
-            this.find = function(path, condition){
-              var _this = this,
-                 parts = [];
-              // Get children from path
-              function children(root, path){
-                 var url = '',
-                    parts = [];
-                 $.each(path.split('.'), function(i){
-                    var tempParts = [];
-                    if(i == 0){
-                       url = this;
-                       tempParts = root;
-                    }
-                    else{
-                       url += '.' + this;
-                       if(this.match(/\[*.\]$/)){
-                          tempParts = parts[this.split('[')[0]][this.match(/\[*.\]$/)[0].replace(/[\[|\]]/g,'')];
-                       }
-                       else if(parts instanceof Array){
-                          var part = this;
-                          $.each(parts, function(){
-                             if(this instanceof Array){
-                                $.each(this, function(){
-                                   if(this[part] != undefined) tempParts.push(this[part]);
-                                });
-                             }
-                             else{
-                                if(this[part] != undefined) tempParts.push(this[part]);
-                             }
-                          });
-                       }
-                       else{
-                          tempParts = parts[this];
-                       }
-                    }
-                    if(!tempParts || tempParts.length == 0){
-                       _this.throwError('Invalid path ' + url);
-                       parts = [];
-                       return false;
-                    }
-                    else{
-                       parts = tempParts;
-                    }
-                 });
-                 return parts;
-              }
-              // Get object
-              if(path.split('.')[0].match(/\[*.\]$/)){
-                 var index = path.split('.')[0].match(/\[*.\]$/)[0].replace(/[\[|\]]/g, '');
-                 var root = this.json[path.split('.')[0].replace(/\[.*\]/, '')][index];
-              }
-              else{
-                 var root = this.json[path.split('.')[0]];
-              }
-              parts = children(root, path);
-              if(condition){
-                 // Define match function for condition
-                 function match(element, operator, rule){
-                    if(element && operator && rule){
-                       if(operator === '=~'){
-                          var options = '';
-                          if(rule.match(/^\/.*/) && rule.match(/\/.$/)){
-                             options = rule[rule.length - 1];
-                             rule = rule.substring(0, rule.length - 1);
-                          }
-                          rule = rule.replace(/^\//, '').replace(/\/$/, '');
-                          return (element.toString().match(new RegExp(rule, options))) ? true : false;
-                       }
-                       else{
-                          if(operator === '==' || operator === '!='){
-                             return (eval('element.toString()' + operator + 'rule')) ? true : false;
-                          }
-                          else{
-                             rule = parseInt(rule);
-                             element = parseInt(element);
-                             return (eval('element' + operator + 'rule')) ? true : false;
-                          }
-                       }
-                    }
-                 }
-                 var validParts = [],
-                    rule = condition.replace(/^.*(==|\>=|\<=|\>|\<|!=|=~)/, ''),
-                    subpath = condition.replace(/(==|\>=|\<=|\>|\<|!=|=~).*$/, '').replace(/\s$/, ''),
-                    operator = condition.replace(rule, '').replace(subpath, '').replace(/\s/, ''),
-                    element = subpath.split('.')[subpath.split('.').length-1];
-                 if(element === subpath) subpath = null;
-                 if(parts instanceof Array){
-                    if(!subpath){
-                       $.each(parts, function(){
-                          if(match(this[element], operator, rule)) validParts.push(this);
-                       });
-                    }
-                    else{          
-                       $.each(parts, function(){
-                          var currentChildren = children(this, '.' + subpath),
-                             part = this;
-                          if(currentChildren instanceof Array){
-                             $.each(currentChildren, function(){
-                                if(match(this, operator, rule)){
-                                   validParts.push(part);
-                                   return false;
-                                }
-                             });
-                          }
-                          else{
-                             if(match(currentChildren, operator, rule)){
-                                validParts.push(this);
-                             }
-                          }
-                       });
-                    }
-                    parts = validParts;
-                 }
-                 else{
-                    if(!subpath){
-                       if(!match(parts[element], operator, rule)){
-                          parts = null;
-                       }
-                    }
-                    else{
-                       var currentChildren = children(parts, '.' + subpath);
-                       var currentChildren = children(parts, '.' + subpath),
-                          valid = false;
-                       if(currentChildren instanceof Array){
-                          $.each(currentChildren, function(){
-                             if(match(this, operator, rule)){
-                                valid = true;
-                                return false;
-                             }
-                          });
-                       }
-                       else{
-                          if(match(currentChildren, operator, rule)) valid = true;
-                       }
-                       parts = valid ? parts : null;
-                    }
-                 }
-              }
-              return (!parts) ? [] : parts;
-            }
-
-            // Remove JSON by a given String splitted by '.'
-            this.remove = function(string){
-              if(this.get(string)){
-                 eval('delete this.json.' + string);
-                 if(string.match(/\[*.\]$/)){
-                    var _this = this;
-                    //var filterNull = obj.filter(undefined);
-                    var filterNull = $.grep(eval('_this.json.' + string.replace(/\[*.\]$/, '')), function(n,i){
-                       return(n);
-                    });
-                    eval('_this.json.' + string.replace(/\[*.\]$/, '') + ' = filterNull');
-                 }
-              }
-            }
-
-            // Detect type for string values of true, false, integer and null 
-            this.detectTypes = function(string){
-              if(string.match(/^true$/i)){
-                 return true
-              }
-              else if(string.match(/^false$/i)){
-                 return false;
-              }
-              else if(string.match(/^null|NaN|nil|undefined$/i)){
-                 return null;
-              }
-              else if(string.match(/^[0-9]*$/i)){
-                 return parseInt(string);
-              }
-              else{
-                 return string;
-              }
-            }
-
-            // Log specific error message
-            this.throwError = function(msg){
-              if(this.options.log){
-                 if(!window.console){
-                    // Add log method to window.console
-                    window.console = {
-                       log : function(s){ alert(s); }
-                 };
-              }
-             }
-            }
-
-           // Initialize
-           this.init();
-        };
+        $.XMLtoJSON = function(q){this.init=function(){this.document=this.xml=!1;this.json={};this.duration=new Date;this.options=$.extend({url:!1,xmlString:!1,namespaces:!1,valueIdentifier:"$",attributeIdentifier:"_",emptyValuesAsNull:!1,modify:{},clearEmptyNodes:!1,cache:!1,detectTypes:!1,filter:null,fallback:null,log:!1},q);this.options.url&&this.receiveXML();this.options.xmlString&&(this.xml=this.options.xmlString);this.xml&&(this.parseXML(),this.convertXML(),null!=this.options.fallback&&(this.json=={}|| this.json.parsererror)&&this.options.fallback({message:"XML is invalid",code:500}),this.modifyJSON());this.duration=new Date-this.duration+" ms"};this.receiveXML=function(){var a;$.ajax({type:"GET",url:this.options.url,async:!1,dataType:"text",cache:this.options.cache,complete:function(j){j.responseText&&(a=j.responseText.replace(/^\s+/,""))}});a?this.xml=a:(this.throwError("Cannot receive XML from "+this.options.url),null!=this.options.fallback&&this.options.fallback({message:"Cannot receive XML from "+ this.options.url,code:404}))};this.parseXML=function(){this.xml=this.xml.replace(/^[\s\n\r\t]*[<][\?][xml][^<^>]*[\?][>]/,"");window.ActiveXObject?(this.document=new ActiveXObject("Microsoft.XMLDOM"),this.document.async=!1,this.document.loadXML(this.xml)):(this.document=new DOMParser,this.document=this.document.parseFromString(this.xml,"application/xml"));(!this.xml||!this.document)&&this.throwError("Cannot parse XML")};this.convertXML=function(){var a=this;(function g(c,b,d,h){var e=d.valueIdentifier, f=d.attributeIdentifier;if(9===c.nodeType)$.each(c.childNodes,function(){g(this,b,d,h)});else if(1===c.nodeType){var m=h[e]?{valueIdentifier:!0}:{},k=c.nodeName,n=!0==d.namespaces?!0:!1,l={};-1!=k.indexOf(":")&&(m[k.substr(0,k.indexOf(":"))]=!0);$.each(c.attributes,function(){var b=this.nodeName,c=this.nodeValue;a.options.filter&&(c=a.options.filter(c));a.options.detectTypes&&(c=a.detectTypes(c));"xmlns"===b?(h[e]=c,m[e]=!0):0===b.indexOf("xmlns:")?h[b.substr(b.indexOf(":")+1)]=c:-1!=b.indexOf(":")? (l[f+b]=c,m[b.substr(0,b.indexOf(":"))]=!0):l[f+b]=a.options.emptyValuesAsNull&&(""===c||null===c)?null:c});var p=n?h:m;$.each(p,function(a,b){p.hasOwnProperty(a)&&(l[f+"xmlns"]=l[f+"xmlns"]||{},l[f+"xmlns"][a]=b)});b[k]instanceof Array?b[k].push(l):b[k]=b[k]instanceof Object?[b[k],l]:l;a.options.emptyValuesAsNull&&0==c.childNodes.length&&(b[k]=null);$.each(c.childNodes,function(){g(this,l,d,h)})}else 3===c.nodeType&&(c=c.nodeValue,c.match(/[\S]+/)&&(a.options.filter&&(c=a.options.filter(c)),a.options.detectTypes&& (c=a.detectTypes(c)),b[e]instanceof Array?b[e].push(c):b[e]=b[e]instanceof Object?[b[e],c]:c))})(this.document,this.json,this.options,{})};this.modifyJSON=function(){var a=this,j=this.options.attributeIdentifier;$.each(this.options.modify,function(g,c){var b=g.match(/\.\*$/)?!0:!1;g=b?g.replace(/\.\*$/,""):g;var d=a.find(g);if(d){var h=c.replace(/\.[^\.]*$/,""),e=1<c.split(".").length?h+'["'+c.split(".")[c.split(".").length-1]+'"]':c;b||a.remove(g);1<h.split(".").length&&a.createNodes(h);a.createNodes(c); b?(e=e.match(/\[\"\"\]/)?"":e+".",$.each(d,function(a){a[0]!=j&&eval("_this.json."+e+a+" = value")}),$.each(a.find(g),function(b){b[0]!=j&&a.remove(g+"."+b)})):eval("_this.json."+e+" = content");if(a.options.clearEmptyNodes){var d=b?a.find(g):a.find(g.replace(/\.[^\.]*$/,"")),f=!0;$.each(d,function(b,c){if(c instanceof Object){var d=0,e;for(e in c)d++;if(1<d||1==d&&!a.options.namespaces)return f=!1}if(b[0]!=j)return f=!1});f&&(b?a.remove(g):a.remove(g.replace(/\.[^\.]*$/,"")))}}})};this.createNodes= function(a){var j=this;this.get(a,!1)||function c(a,d){if(a.split(".")[d]){for(var h=[],e=0;e<=d;e++)h.push(a.split(".")[e]);h=h.join(".");j.get(h,!1)||eval("_this.json."+h+"={}");c(a,d+1)}}(a,0)};this.get=function(a,j){var g=this;j=!1==j?!1:!0;var c=this.json;a=a.replace(/^\./,"");var b="",d=null;(function e(f,j){if(d=a.split(".")[f]){b+=0===f?d:"."+d;c=d.match(/\[*.\]$/)?c[d.split("[")[0]][d.match(/\[([^\]]*)/)[1]]:c[d];if(!c)return!0===j&&(a===b?g.throwError("Invalid path "+a):g.throwError('Invalid part "'+ b+'" in path "'+a+'"')),c;e(f+1,j)}})(0,j);return c};this.find=function(a,j){function g(a,b){var d="",e=[];$.each(b.split("."),function(b){var f=[];if(0==b)d=this,f=a;else if(d+="."+this,this.match(/\[*.\]$/))f=e[this.split("[")[0]][this.match(/\[*.\]$/)[0].replace(/[\[|\]]/g,"")];else if(e instanceof Array){var g=this;$.each(e,function(){this instanceof Array?$.each(this,function(){void 0!=this[g]&&f.push(this[g])}):void 0!=this[g]&&f.push(this[g])})}else f=e[this];if(!f||0==f.length)return c.throwError("Invalid path "+ d),e=[],!1;e=f});return e}var c=this,b=[];a.split(".")[0].match(/\[*.\]$/)?(b=a.split(".")[0].match(/\[*.\]$/)[0].replace(/[\[|\]]/g,""),b=this.json[a.split(".")[0].replace(/\[.*\]/,"")][b]):b=this.json[a.split(".")[0]];b=g(b,a);if(j){var d=function(a,b,c){if(a&&b&&c){if("=~"===b)return b="",c.match(/^\/.*/)&&c.match(/\/.$/)&&(b=c[c.length-1],c=c.substring(0,c.length-1)),c=c.replace(/^\//,"").replace(/\/$/,""),a.toString().match(RegExp(c,b))?!0:!1;if("=="===b||"!="===b)return eval("element.toString()"+ b+"rule")?!0:!1;parseInt(c);parseInt(a);return eval("element"+b+"rule")?!0:!1}},h=[],e=j.replace(/^.*(==|\>=|\<=|\>|\<|!=|=~)/,""),f=j.replace(/(==|\>=|\<=|\>|\<|!=|=~).*$/,"").replace(/\s$/,""),m=j.replace(e,"").replace(f,"").replace(/\s/,""),k=f.split(".")[f.split(".").length-1];k===f&&(f=null);if(b instanceof Array)f?$.each(b,function(){var a=g(this,"."+f),b=this;a instanceof Array?$.each(a,function(){if(d(this,m,e))return h.push(b),!1}):d(a,m,e)&&h.push(this)}):$.each(b,function(){d(this[k],m, e)&&h.push(this)}),b=h;else if(f){var n=g(b,"."+f),n=g(b,"."+f),l=!1;n instanceof Array?$.each(n,function(){if(d(this,m,e))return l=!0,!1}):d(n,m,e)&&(l=!0);b=l?b:null}else d(b[k],m,e)||(b=null)}return!b?[]:b};this.remove=function(a){this.get(a)&&(eval("delete this.json."+a),a.match(/\[*.\]$/)&&($.grep(eval("_this.json."+a.replace(/\[*.\]$/,"")),function(a){return a}),eval("_this.json."+a.replace(/\[*.\]$/,"")+" = filterNull")))};this.detectTypes=function(a){return a.match(/^true$/i)?!0:a.match(/^false$/i)? !1:a.match(/^null|NaN|nil|undefined$/i)?null:a.match(/^[0-9]*$/i)?parseInt(a):a};this.throwError=function(){this.options.log&&!window.console&&(window.console={log:function(a){alert(a)}})};this.init()};
 
     }()),
     trim = $.trim,
-    K = Kernel, __M, __C, appify;
+    K = Kernel, __M, appify;
 
     K.extend(K, {
 
         Builder : {
-
             modules : {},
-
+            aliases : {},
             defineMod : function ( o ) {
                 var 
                 name,
                 proto = {
-                    ns     : "",
-                    name   : "",
-                    use    : true,
-                    config : {},
-                    module : {}
+                    ns      : "",
+                    name    : "",
+                    use     : true,
+                    config  : {},
+                    module  : {},
+                    aliases : []
                 },
 
                 checkProto = function () {
                     var prop;
 
                     for ( prop in o ) {
-                        if ( !proto.hasOwnProperty( prop ) || typeof o[prop] !== typeof proto[prop] ) return false;
+                        if ( !prop in proto || typeof o[prop] !== typeof proto[prop] ) return false;
                     }
 
                     if ( !o.module.init || typeof o.module.init !== "function" ) return false;
@@ -563,23 +60,102 @@
 
                 name = trim( o.ns ) + "/" + trim( o.name );
 
-                o.module.config = o.config || {};
+                o.module.config  = o.config || {};
+                if ( o.aliases ) {
+                	K.Builder.createAliases( o.aliases, o.module.config );
+                }
 
                 K.Builder.modules[ name ] = o;
+                delete K.Builder.modules[ name ].aliases;
             },
 
-            start : function () {
+           	createAliases : function ( aliasCfg, configO ) {
+           		var aliasCell, aliases, createLinks, getParentObjRef;
+
+           		if ( !aliasCfg.length || typeof aliasCfg[0] !== "string" || typeof aliasCfg[1] !== "object"  ) return;
+
+
+           		getParentObjRef = function ( propArr, objRef ) {
+           			var o;
+
+           			if ( !objRef ) {
+           				o = configO[ propArr[0] ];
+           				propArr.pop();
+           			} 
+           			else {
+           				propArr.shift();
+           				o = objRef[ propArr[0] ];
+           			}
+         			return propArr.length > 0 ? getParentObjRef( propArr, o ) : objRef;
+           		};
+
+           		createLinks = function () {
+           			_.each( aliasCfg[1], function ( v, k, o ) {
+           				var levels, updateProp, updateObj;
+           				v = v.split(".");
+           				levels = v.length;
+
+           				if ( levels === 1 ) {
+           					if ( v[0] in configO ) {
+           						o[k] = [configO, v[0]];
+           						return;
+           					}
+           				}
+
+           				if ( levels > 1 ) {
+           					updateProp = v[ levels - 1 ];
+           					updateObj  = getParentObjRef( v );
+           					if ( updateObj ) o[k] = [updateObj, updateProp];
+           					else delete o[k];
+           				}
+
+           			});
+           		};
+
+           		createLinks();
+
+           		Kernel.Builder.aliases[ trim(aliasCfg[0]) ] = aliasCfg[1];
+           	},
+
+            start : function ( cfg ) {
                 var
                 modules = K.Builder.modules,
+                aliases = K.Builder.aliases,
                 registerMods = [],
                 define = K.module.define,
-                prop;
+                prop,
+                inArr = $.inArray;
+
+                //use cfg to update mod configs using alias object
+                if ( _.isObject( cfg.config) && !_.isEmpty( aliases ) ) {
+
+                	_.each( cfg.config, function( aliasObj, aliasGroup ) {
+                		aliasGroup = trim( aliasGroup );
+
+                		if ( (aliasGroup in aliases) && !_.isEmpty( aliasObj )) {
+
+                			_.each( aliasObj, function( aliasValue, aliasKey ){
+                				var ln;
+                				aliasKey = trim( aliasKey );
+                				if ( aliasKey in aliases[aliasGroup]) {
+                					ln = aliases[aliasGroup][aliasKey];
+                					ln[0][ln[1]] = aliasValue;
+                				}
+
+                			})
+
+                		}
+
+                	});
+
+                }
 
                 for ( prop in modules ) {
-                    if ( !!modules[prop].use ) {
+                	if ( (cfg.use && inArr( prop.split("/")[1], cfg.use ) > -1) || !!modules[prop].use ) {
                         define( prop, modules[prop].module );
                         registerMods.push({ type : prop, id : prop });
                     }
+                    else delete modules[prop];
                 }
 
                 K.register( registerMods );
@@ -588,78 +164,66 @@
             },
 
             appify : function ( prefix, arr ) {
-                var prop, i, l, ret = {};
+                var ret = {};
 
                 prefix = trim( prefix );
 
-                i = 0;
-                l = arr.length;
-                for ( ; i < l; i += 1 ) {
-                	arr[i] = trim( arr[i] );
-                	ret[ arr[i] ] = prefix + "_" + arr[i];
-                }
+                _.each( arr, function( v, i ){
+                	v = trim( v );
+                	ret[ v ] = prefix + "_" + v;
+                });
 
                 return ret;
             } 
         },
 
-        LOC_DATA : { },
-
-        USER_COORDS : { },
-
-        TEMPLATES : { },
-
-        mapModel : function () {
-            var locData = K.LOC_DATA;
-
-            if ( !locData || $.isEmptyObject( locData  ) ) return;
-
-            // radius model
-            if ( locData.locations && locData.locations.location ) {
-                K.LOC_DATA = locData.locations.location;
-                return;
-            }
-
-            // territory model
-            if ( locData.serviceAreas && locData.serviceAreas.serviceArea ) {
-                K.LOC_DATA = locData.serviceAreas.serviceArea;
-                return;
-            }
-        },
-
-        GMAP : { },
-
-        GMAP_BOUNDS : { },
-
     	Util : {
 
-    		hasBoolProp : function ( obj, bool, retProp ) {
-    			var prop;
+    		hasBoolProp : function ( obj, bool, retKey ) {
+    			var test, needle;
 
-    			for ( prop in obj ) {
-    				if ( typeof obj[prop] === "boolean" && obj[prop] === bool ) {
-    					 return !!retProp ? prop : true;
+    			test = _.find( obj, function( v, k ) {
+    				if ( _.isBoolean( v ) && v === bool ) {
+    					needle = k;
+    					return true;
     				}
-    			}
+    			});
 
-    			return false;
+    			return !!test ? ( !!retKey ? needle : test ) : false;
     		},
+
+    		createJNodes : function ( nodeObj, subObjProp ) {
+                var prop, curr;
+
+                if ( typeof nodeObj !== "object" ) return false;
+
+                if ( subObjProp ) subObjProp = trim( subObjProp );
+
+                for ( prop in nodeObj ) {
+                    prop = trim( prop );
+
+                    if ( subObjProp && typeof nodeObj[prop] == "object"  ) {
+
+                        if ( !nodeObj[prop].hasOwnProperty( subObjProp ) ) return false;
+
+                        curr = nodeObj[prop][subObjProp] = $( nodeObj[prop][subObjProp] );
+
+                    }
+                    else curr = nodeObj[prop] = $( nodeObj[prop] );
+
+
+                    if ( !this.isNode( curr ) ) return false;
+                }
+
+                return true;
+            },
 
             ajax : function ( o ) {
                 var def = { type : "POST" };
                 return $.ajax( $.extend( def, o ) );
             },
 
-            isType : function (type, o) {
-                return o && typeof o === $.trim( type ); 
-            },
-
-            arr2Str : function ( arr ) {
-                return arr.join("");
-            },
-
             add_QS_Params : function ( qStr, param ) {
-
                 var i, len, trim = $.trim, addParam;
 
                 addParam = function ( param ) {
@@ -705,40 +269,31 @@
     		},
 
     		xml2json : function ( filename, cb ) {
-
                 var data = new $.XMLtoJSON({ url : trim( filename ) });
-
                 if ( typeof cb === "function" && typeof json === "object" ) cb( json );
-
                 return data;
     		},
 
-    		loadScript : function ( url, callback ) {
+    		loadScript : function ( url, cb ) {
     			var 
-    			script, cb;
+    			script, _cb;
 
-    			cb = function () {
-    				if (typeof callback === "function") callback();
+    			_cb = function () {
+    				if (typeof cb === "function") cb();
     			};
-
 
     			script = document.createElement("script")
     		    script.type = "text/javascript";
-
 
     		    if (script.readyState){  //IE
     		        script.onreadystatechange = function() {
     		            if ( script.readyState == "loaded" || script.readyState == "complete" ) {
     		                script.onreadystatechange = null;
-    		                cb();
+    		                _cb();
     		            }
     		        };
     		    } 
-    		    else {
-    		        script.onload = function() {
-    		            cb();
-    		        };
-    		    }
+    		    else script.onload = _cb;
 
     		    script.src = url;
     		    document.getElementsByTagName("head")[0].appendChild( script );	
@@ -792,32 +347,23 @@
                 };
             },
 
-            checkZip : function ( val ) {
-                var rgx = /^\d{5}([\-]\d{4})?$/;
-                return rgx.test( trim(val) );
-            },
-
             validate : (function(){
                 var lib = {
-                    email : /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i,
-                    zip : /^\d{5}([\-]\d{4})?$/
+                    email  : /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i,
+                    zip    : /^\d{5}([\-]\d{4})?$/,
+                    postal : /^[ABCEGHJKLMNPRSTVXY]\d[ABCEGHJKLMNPRSTVWXYZ]( )?(\d[ABCEGHJKLMNPRSTVWXYZ]\d)?$/
                 };
 
-
                 return function ( val, regex ) {
-                    return lib.hasOwnProperty(trim(regex)) ? lib[regex].test(val) : false;
+ 					return _.has( lib, trim(regex) ) ? lib[regex].test(val) : false; 
                 };  
             }())
     	},
 
     	Bank : (function(){
-    		var 
-    		bank = {
-
-    		};
+    		var bank = {};
 
     		return {
-
     			add : function ( modID, k, v ) {
     				modID = trim( modID.slice( modID.indexOf("/") + 1 ) );
     				if ( !bank[ modID ] ) bank[ modID ] = {};
@@ -829,30 +375,89 @@
     			},
 
     			load : function ( obj, context ) {
-    				var prop, modID, bankProp;
+    				var modID, bankProp, pass = true;
 
-    				for ( prop in obj ) {
-    					modID    = trim( obj[prop] );	
-    					bankProp = trim( prop ); 
+    				_.each( obj, function( v, k ) {
+    					modID    = trim( v );
+    					bankProp = trim( k );
 
-    					if ( !bank.hasOwnProperty( modID ) || !bank[ modID ][ bankProp ] ) return false;
-    					context[bankProp] = bank[ modID ][ bankProp ];
-    				}
+    					if ( !_.has( bank, modID ) || !bank[ modID ][ bankProp ] ) {
+    						pass = false;
+    						return;
+    					}
 
-    				return true;
+    					context[ bankProp ] = bank[ modID ][ bankProp ];
+    				});
+
+    				return pass;
     			}	
 
     		};
 
-    	}())
+    	}()),
 
+    	mapModel : function () {
+            var locData = K.LOC_DATA;
+
+            if ( !locData || $.isEmptyObject( locData  ) ) return;
+
+            // radius model
+            if ( locData.locations && locData.locations.location ) {
+            	if ( !_.isArray( locData.locations.location ) ) {
+            		locData.locations.location = [locData.locations.location];
+            	}
+                K.LOC_DATA = locData.locations.location;
+                return;
+            }
+
+            // territory model
+            if ( locData.serviceAreas && locData.serviceAreas.serviceArea ) {
+                K.LOC_DATA = locData.serviceAreas.serviceArea;
+                return;
+            }
+        },
+
+    	LOC_DATA    : { },
+        USER_COORDS : { },
+        TEMPLATES   : { },
+        GMAP        : { },
+
+        GMARKERS_VIEWSTATE : (function () {
+        	var
+        	shown  = [],
+        	hidden = [];
+
+        	return {
+
+        		clear : function () {
+        			shown  = [];
+        			hidden = [];
+        		},
+
+        		shown : function ( o ) {
+        			shown.push( o );
+        		},
+
+        		hidden : function ( o ) {
+        			hidden.push( o );
+        		},
+
+        		report : function () {
+        			return {
+        				shown  : shown,
+        				hidden : hidden
+        			};
+        		}
+        	};
+
+        }())
     });
 
 	__M = K.Builder.defineMod;
-    __C = K.Builder.addModConfig;
 	appify = K.Builder.appify;
 
 
+	// - METRO APP -
     ;(function(){
     	var APP, NS, MSGS;
 
@@ -861,7 +466,7 @@
         //::::::::::::::::::
         //:::::: NAMESPACES
         NS = appify(APP, [
-            "loc_data",
+            "LOC_DATA",
             "geo",
             "gmaps",
             "templates",
@@ -874,27 +479,19 @@
             "gmap_api_loaded",
             "gmap_config_ready",
             "gmap_dom_ready",
-
-            "loc_data_ready",
-            "loc_coords_ready",
-
             "new_user_search",
             "user_search_update",
             "user_search_request",
             "loc_data_sorted",
             "docready_loclist",
-
             "search_model_ready",
             "user_search_response",
-
             "markers_loaded",
             "docready_markers",
-
             "load_info_windows",
-
             "viewport_changed",
-
-            "templates_loaded"
+            "templates_loaded",
+            "loc_list_render_update"
         ]);
 
 
@@ -903,25 +500,25 @@
 
         // :: LOAD LOC DATA
         __M({
-            ns   : NS.loc_data,
+            ns   : NS.LOC_DATA,
             name : "LOAD",
             use  : true,
                 
-            //:::::::::::::::::::::::::    
             config : {
-                file : "locations.xml"
+                file : "rad2.xml"
             },
-            //::::::::::::::::::::::::: 
+
+            aliases : ["locData", {
+            	"file" : "file"
+            }],
 
             module : {
 
                 init : function () {
-                    if ( this.config.file ) this.load();
-                },
-
-                load : function () {
-                    K.LOC_DATA = K.Util.xml2json( this.config.file ).json;
-                    K.mapModel();
+                    if ( this.config.file ) {
+                    	K.LOC_DATA = K.Util.xml2json( this.config.file ).json;
+	                    K.mapModel();
+                    }
                 }
 
             }
@@ -930,59 +527,49 @@
 
         //:: GEO CODE LOCS DATA
         __M({
-            ns   : NS.loc_data,
+            ns   : NS.LOC_DATA,
             name : "COORDS",
             use  : true,
             
-            //:::::::::::::::::::::::::
             config : {
-                "lat" : "_lat",
-                "lng" : "_lng"
+                lat : "_lat",
+                lng : "_lng"
             },
-            //:::::::::::::::::::::::::
 
             module : {
 
                 init : function () {
-                    var self = this;
-                    self.hub.listen( MSGS.gmap_api_loaded, function(){
-                        self.addCoords();
-                        self.hub.broadcast( MSGS.loc_coords_ready );
+                    var _I = this;
+                    _I.hub.listen( MSGS.gmap_api_loaded, function(){
+                        _I.addCoords();
                     });
                 },
 
                 addCoords : function () {
                     var 
-                    locData = K.LOC_DATA, self = this,
-                    i, len, lat, lng;
+                    _I     = this, 
+                    config = _I.config,
+                    lat    = config.lat, 
+                    lng    = config.lng;
 
-                    i   = 0;
-                    len = locData.length;
-                    for ( ; i < len; i += 1 ) {
-                        lat = locData[i][self.config.lat];
-                        lng = locData[i][self.config.lng];
-
-                        if ( !lat || !lng ) continue;
-
-                        locData[i].GLatLng = new google.maps.LatLng( lat, lng );
-                    }
+                    _.each( K.LOC_DATA, function( o ) {
+                    	if ( o[lng] && o[lng] ) {
+                    		o.GLatLng = new google.maps.LatLng( o[lat], o[lng] );
+                    	}
+                    });
                 }
             }
         });
-
 
 		
 		//::::::::::::::::::::::::::::::::::::::::
         //:::::::::::: UI FEATURES
         
+        //:: DYNAMIC ZOOM
         __M({
-        	ns : NS.features,
+        	ns   : NS.features,
         	name : "DYNAMIC_ZOOM",
-        	use : true,
-
-        	config : {
-
-        	},
+        	use  : true,
 
         	module : {
 
@@ -992,21 +579,33 @@
         		},
 
         		updateZoom : function ( hideFlag ) {
-        			var
-        			bounds  = new google.maps.LatLngBounds(),
-        			locData = Kernel.LOC_DATA,
-        			i, len;
+        			var 
+        			bounds,
+        			report = K.GMARKERS_VIEWSTATE.report();
 
-        			i   = 0;
-        			len = locData.length;
-        			for ( ; i < len; i += 1 ) {
-        				if ( !locData[i][ hideFlag ] ) {
-        					bounds.extend( locData[i].marker.getPosition() );
-        				}
+        			if ( K.LOC_DATA.length < 2 ) {
+        				K.GMAP.setCenter( K.LOC_DATA[0].marker.getPosition() );
+        				return;
         			}
 
-        			Kernel.GMAP.fitBounds( bounds );	
+        			if ( report.shown.length === 1 ) {
+        				K.GMAP.setCenter( report.shown[0].marker.getPosition() );
+        				return;
+        			}
+        			if ( report.shown.length < 1 ) {
+        				return;
+        			}
 
+        			
+        			bounds = new google.maps.LatLngBounds();
+
+        			_.each( K.LOC_DATA, function( o ) {
+        				if ( !o[ hideFlag ] ) {
+        					bounds.extend( o.marker.getPosition() );
+        				}
+        			});
+
+        			K.GMAP.fitBounds( bounds );	
         		}
 
         	}
@@ -1016,68 +615,67 @@
 
         //:: INFO WINDOWS FEATURE
         __M({
-            ns   : NS.loc_data,
+            ns   : NS.LOC_DATA,
             name : "INFO_WINDOWS",
-            use  : true,
+            use  : false,
             
-            //:::::::::::::::::::::::::
             config : {
-                file : "templates.html",
-                tmplNodeId : "infoWindows",
-                userEvent : "click" // click or mouseover
-
+                tmplNodeId : "",
+                userEvent  : "" // click or mouseover
             },
-            //:::::::::::::::::::::::::
+
+            aliases : ["infoWindows", {
+            	tmplNodeId : "tmplNodeId",
+            	mouseEvent : "userEvent"
+            }],
 
             module : {
 
                 init : function () {
-                    var self = this;
+                    var _I = this;
 
-                    self.hub.listen( MSGS.markers_loaded, function () {
-                        self.GMAPInfoWindow = new google.maps.InfoWindow();
-                        self.template = K.TEMPLATES[ trim(self.config.tmplNodeId) ];
-                        if ( !self.template ) return;
-                        self.buildInfoWindowViews();
+                    _I.hub.listen( MSGS.markers_loaded, function () {
+
+                        _I.GMAPInfoWindow = new google.maps.InfoWindow();
+                        _I.template       = K.TEMPLATES[ trim(_I.config.tmplNodeId) ];
+
+                        if ( _I.template ) _I.buildInfoWindowViews();
 
                     });
                 },
 
                 buildInfoWindowViews : function  () {
                     var
-                    self = this,
-                    template  = _.template( self.template ),
-                    LOC_DATA = K.LOC_DATA,
-                    i, len;
+                    _I     = this,
+                    template = _.template( _I.template );
 
-                    i   = 0;
-                    len = LOC_DATA.length;
-                    for ( ; i < len; i += 1 ) {
-                        LOC_DATA[i].infoWindow = $( template({ data : LOC_DATA[i] }) )[0];
+                    _.each( K.LOC_DATA, function( o ) {
+                    	o.infoWindow = $( template({ data : o }) )[0];
 
-                        self.createMarkerEvent({
-                            marker : LOC_DATA[i].marker,
-                            infoWindow : LOC_DATA[i].infoWindow 
+                    	_I.createMarkerEvent({
+                            marker     : o.marker,
+                            infoWindow : o.infoWindow 
                         });
-                    }
+                    });
                 },
 
                 createMarkerEvent : function ( o ) {
-                    var self = this;
+                    var _I = this;
+                    google.maps.event.addListener( o.marker, _I.config.userEvent, function() {
 
-                    google.maps.event.addListener(o.marker, self.config.userEvent, function() {
-                        self.GMAPInfoWindow.setContent( o.infoWindow );
-                        self.GMAPInfoWindow.open( K.GMAP, o.marker);
+                        _I.GMAPInfoWindow.setContent( o.infoWindow );
+                        _I.GMAPInfoWindow.open( K.GMAP, o.marker);
+
                     });
                 }
             }
 
         });
 
-		
+
 		//:: MARKER STYLES
 		__M({
-			ns   : NS.loc_data,
+			ns   : NS.LOC_DATA,
             name : "MARKER_STYLES",
             use  : true,
 
@@ -1093,7 +691,7 @@
             				txtclr : "000000"
             			},
 
-            			img : "http://www.valvolineofflagstaff.com/images/map-icon.png"
+            			img : ""
             		},
 
             		locs : {
@@ -1105,19 +703,57 @@
             				txtclr : "FFFFFF"
             			},
 
-            			img : "http://www.valvolineofflagstaff.com/images/map-icon.png", 
+            			img : "", 
 
             			sorting  : {
-            				alpha : false,
-            				numeric : false
-            			}
+            				alpha   : false,
+            				numeric : false,
+            				img     : false
+            			},
+
+            			imgSortMap   : {
+            				alphaLower : {
+            					key   : "{a}",
+            					alias : "alpha",
+            					casing : "toLowerCase"
+            				},
+
+            				alphaUpper : {
+            					key   : "{A}",
+            					alias : "alpha",
+            					casing : "toUpperCase"
+            				},
+
+            				num : {
+            					key   : "{#}",
+            					alias : "num" 
+            				}
+            			},
+
+		            	imgSortKeyDef : "num",
+		            	imgSortDefExt : ".png"
             		}
             	},
 
+            	
             	styleKey   : "{{style}}",
             	HEX_MARKER : "https://chart.googleapis.com/chart?chst=d_map_pin_letter&chld={{style}}"
-
             },
+
+        	aliases : ["markerStyles", {
+        		userType   : "markers.user.use",
+        		userHexBG  : "markers.user.hex.bgclr",
+        		userHexTxt : "markers.user.hex.txtclr",
+        		userImgSrc : "markers.user.img",
+        		locsType   : "markers.locs.use",
+        		locsHexBG  : "markers.locs.hex.bgclr",
+        		locsHexTxt : "markers.locs.hex.txtclr",
+        		locsImgSrc : "markers.locs.img",
+
+        		locSortImg : "markers.locs.sorting.img",
+        		locsSortAlpha : "markers.locs.sorting.alpha",
+        		locsSortNum : "markers.locs.sorting.numeric"
+            }],
 
             module : {
 
@@ -1129,11 +765,11 @@
             	},
 
             	buildMap : function () {
-            		var self = this;
-            		self.buildMap = {
-	            		hex : self.buildHex,
-	            		img : self.buildImg,
-	            		def : self.buildHex
+            		var _I = this;
+            		_I.buildMap = {
+	            		hex : _I.buildHex,
+	            		img : _I.buildImg,
+	            		def : _I.buildHex
             		};
             	},
 
@@ -1154,69 +790,64 @@
 
             	locMarkers : function () {
             		var
-            		self = this,
+            		_I        = this,
+            		alphabet  = "abcdefghijklmnopqrstuvwxyz".split(""),
+            		markers   = _I.config.markers,
+            		locsCfg   = markers.locs,
             		sortFuncs = {
-            			alpha : (function( locs ){
-            				var alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
+        				alpha : function ( locList, updateProp ) {
+        					_.each( locList, function( loc, i ){
+        						loc[ updateProp ] = _I.buildHex( locsCfg, alphabet[ i ] );
+        					});
+        				},
 
-            				return function ( locArr, updateProp ) {
-	            				var i, len, currLoc, style;
+        				numeric : function ( locList, updateProp ) {
+        					_.each( locList, function( loc, i ){
+        						loc[ updateProp ] = _I.buildHex( locsCfg, ( i + 1 ).toString() );
+        					});
+        				},
 
-	            				i   = 0;
-	            				len = locArr.length;
-	            				for ( ; i < len; i += 1 ) {
-	            					currLoc = locArr[i];
-	            					currLoc[ updateProp ] = self.buildHex( locs, alphabet[i] );
-	            				}	
-	            			};
-            			}( self.config.markers.locs )),
-
-            			numeric : (function( locs ){
-
-	            			return function ( locArr, updateProp ) {
-	            				var i, len, currLoc, style;
-
-	            				i   = 0;
-	            				len = locArr.length;
-	            				for ( ; i < len; i += 1 ) {
-	            					currLoc = locArr[i];
-	            					currLoc[ updateProp ] = self.buildHex( locs, (i+1).toString());
-	            				}	
-	            			}
-	            		}( self.config.markers.locs ))
+        				img : function ( locList, updateProp ) {
+        					_.each( locList, function( loc, i ){
+        						loc[ updateProp ] = _I.buildSortedImg({
+        							num   : ( i + 1 ).toString(),
+        							alpha : alphabet[ i ]
+        						});
+        					});
+        				}
             		},
-            		style,
-            		cfg = this.config.markers.locs;
 
-            		cfg.use = trim( cfg.use );
+            		sorting = K.Util.hasBoolProp( locsCfg.sorting, true, true ),
+            		use     = locsCfg.use ? trim( locsCfg.use ) : null;
 
-            		//def
-            		if ( !cfg.use || !cfg.hasOwnProperty( cfg.use ) ) {
-            			this.config.markers.locs = this.buildMap["def"]( cfg );
+            		// def
+            		if ( !use ) {
+            			markers.locs = this.buildMap["def"]( locsCfg );
             			return;
             		}
 
-            		//img
-            		if ( cfg.use === "img" ) {
-            			this.config.markers.locs = this.buildMap[ cfg.use ]( cfg );
+            		// img
+            		if ( use === "img" && sorting !== "img" ) {
+            			markers.locs = this.buildMap[ use ]( locsCfg );
             			return;
-            		}	
+            		}
+            		else if ( use === "img" && sorting === "img" ) {
+            			this.buildSortedImg();
+            		}
 
             		// return sort method
-            		cfg.sorting = Kernel.Util.hasBoolProp( cfg.sorting, true, true );
-            		if ( cfg.sorting && sortFuncs.hasOwnProperty( cfg.sorting ) ) {
-            			this.config.markers.locs = sortFuncs[ cfg.sorting ];
+            		if ( sorting && sortFuncs[ sorting ] ) {
+            			markers.locs = sortFuncs[ sorting ];
             			return;
             		}
 
-            		//basic hex
-            		this.config.markers.locs = this.buildMap[ trim( cfg.use ) ]( cfg );
+            		//basic hex 
+            		markers.locs = this.buildMap[ trim( use ) ]( locsCfg );
             		return;
             	},
 
             	buildHex : function ( cfg, sortChar ) {
-            		var style;
-            		style = ( !!sortChar ? trim(sortChar)+"|" : "|" ) + trim( cfg.hex.bgclr.toUpperCase() ) +"|"+ trim( cfg.hex.txtclr.toUpperCase() );
+            		var style = ( !!sortChar ? trim(sortChar)+"|" : "|" ) + trim( cfg.hex.bgclr.toUpperCase() ) +"|"+ trim( cfg.hex.txtclr.toUpperCase() );
             		return this.config.HEX_MARKER.replace( this.config.styleKey, style );
             	},
 
@@ -1224,7 +855,38 @@
             		return trim( cfg.img );
             	},
 
+            	buildSortedImg : function () {
+            		var
+            		cfg       = this.config.markers.locs
+            		img       = cfg.img, 
+            		imgMap    = cfg.imgSortMap,
+            		defSort   = cfg.imgSortKeyDef,
+            		defExt    = cfg.imgSortDefExt,
+            		imgKey    = (function(){
+            			var i;
+
+            			for ( i in imgMap ) {
+            				if ( img.indexOf( imgMap[i].key ) > -1 ) {
+            					return imgMap[i];
+            				}	
+            			}
+
+            			img += imgMap[ defSort ].key + defExt;
+            			return imgMap[ defSort ];
+            		}());
+
+            		this.buildSortedImg = function ( cfg ) {
+            			var _img = img, val = cfg[ imgKey.alias ];
+
+            			if ( imgKey.casing ) val = val[imgKey.casing]();
+
+						return _img.replace( imgKey.key, val );
+            		};
+            		
+            	},
+
             	complete : function () {
+            		// value with either be string or func to be parsed by another module
             		Kernel.Bank.add( this.id, "marker_styles", this.config.markers );
             	}
 
@@ -1232,9 +894,10 @@
 
 		});
 
-
+	
+		//:: MARKER BUILDER
 		__M({
-			ns   : NS.loc_data,
+			ns   : NS.LOC_DATA,
             name : "MARKER_BUILD",
             use  : true,
 
@@ -1247,31 +910,28 @@
             	markerKey : "marker",
             	iconKey   : "icon",
 
-            	userMarkerZ : false 
+            	userMarkerZ : true 
 
             },
 
             module : {
 
             	init : function () {
-            		var self = this;
+            		var _I = this;
 
-            		if ( !Kernel.Bank.load( self.config.dpn, self ) ) return;
-            		// console.log( this.marker_styles );
+            		if ( !Kernel.Bank.load( _I.config.dpn, _I ) ) return;
 
-            		self.hub.listen( MSGS.docready_markers, function ( bool ) {
-                        self.onloadMarkers = bool;
-                        self.build();
-                        self.complete();
+            		_I.hub.listen( MSGS.docready_markers, function ( bool ) {
+                        _I.onloadMarkers = bool;
+                        _I.build();
+                        _I.complete();
                     }); 
                     
-                    self.hub.listen( MSGS.loc_data_sorted , function( hideFlag ) {
-
-                        self.hideFlag = hideFlag;
-
-                        self.buildLocPins();
-                        self.updateMarkers();
-                        self.loadUserMarker();
+                    _I.hub.listen( MSGS.loc_data_sorted , function( hideFlag ) {
+                        _I.hideFlag = hideFlag;
+                        _I.buildLocPins();
+                        _I.updateMarkers();
+                        _I.loadUserMarker();
                     });
 
             	},
@@ -1283,40 +943,30 @@
 
                 buildLocPins : function () {
                		var 
-               		locData  = Kernel.LOC_DATA,
                		locStyle = this.marker_styles.locs,
-               		iconKey  = this.config.iconKey,
-               		i, len; 
+               		iconKey  = this.config.iconKey;
 
                		if ( typeof locStyle == "function" ) {
-               			locStyle( locData, iconKey );
+               			locStyle( K.LOC_DATA, iconKey );
                			return;	
                		}
 
                		if ( typeof locStyle === "string" ) {
-               			i   = 0;
-	               		len = locData.length;
-	               		for ( ; i < len; i += 1 ) {
-	               			locData[i][iconKey] = locStyle;
-	               		}
+               			_.each( K.LOC_DATA, function( o ) {
+               				o[iconKey] = locStyle;
+               			});
                		}
                	},
 
                	buildLocMarkers : function () {
-               		var 
-               		locData   = Kernel.LOC_DATA,
-               		markerKey = this.config.markerKey,
-               		i, len;
+               		var
+               		_I      = this, 
+               		markerKey = this.config.markerKey;
 
-               		i   = 0;
-               		len = locData.length;
-               		for ( ; i < len; i += 1 ) {
-               			locData[i][ markerKey ] = this.makeGMarker( locData[i] );
-
-               			if ( !this.onloadMarkers ) {
-               				locData[i][ markerKey ].setMap( null );
-               			}
-               		}
+               		_.each( K.LOC_DATA, function( o ) {
+               			o[ markerKey ] = _I.makeGMarker( o );
+               			if ( !_I.onloadMarkers ) o[ markerKey ].setMap( null );
+               		});
                 },
 
                 makeGMarker : function ( o ) {
@@ -1329,29 +979,23 @@
 
             	updateMarkers : function () {
                     var
-                    self = this, 
-                    locObj, currObj,
-                    i, len, hideFlag,
-                    markerKey =  this.config.markerKey;
+                    _I      = this, 
+                    markerKey = this.config.markerKey,
+                    hideFlag  = trim( _I.hideFlag );
 
-                    hideFlag = trim( self.hideFlag );
-                    locObj   = K.LOC_DATA;
+                    _.each( K.LOC_DATA, function( o ) {
 
-                    i   = 0;
-                    len = locObj.length;
-                    for ( ; i < len; i += 1 ) {
-                        currObj = locObj[i];
-
-                        if ( currObj[ hideFlag ] ) {
-                            currObj[markerKey].setMap( null );
-                            continue;
+                    	if ( o[ hideFlag ] ) {
+                            o[ markerKey ].setMap( null );
+                            return;
                         }
 
-                        currObj[markerKey].setIcon( currObj[ this.config.iconKey ] );
-                        currObj[markerKey].setMap( K.GMAP );
-                    }
+                        o[markerKey].setIcon( o[ _I.config.iconKey ] );
+                        o[markerKey].setMap( K.GMAP );
 
-                    return self;
+                    });
+
+                    return _I;
                 },
 
                 loadUserMarker : function () {
@@ -1371,10 +1015,10 @@
                     K.USER_COORDS_MARKER = this.makeGMarker( K.USER_COORDS_MARKER );
 
                     if ( this.config.userMarkerZ ) {
-                    	K.USER_COORDS_MARKER.setZIndex( google.maps.Marker.MAX_ZINDEX );
+                    	K.USER_COORDS_MARKER.setZIndex( google.maps.Marker.MAX_ZINDEX - google.maps.Marker.MAX_ZINDEX );
                     }
 
-                    return self;
+                    return this;
                 },
 
                 complete : function () {
@@ -1385,76 +1029,196 @@
 
 		});
 
-		
+	
+		//:: TOTAL LOCS COUNTER VIEW
+        __M({
+            ns   : NS.LOC_DATA,
+            name : "TOTAL_LOCS",
+            use  : false,
+
+            config : {
+
+                nodes : {
+                    absNode    : "",
+                    relNode    : "",
+                    pluralLocs : ""
+                },
+
+                lockAttr : "lock"
+            },
+
+            aliases : ["locCounter", {
+            	absNode    : "nodes.absNode",
+            	relNode    : "nodes.relNode",
+            	pluralLocs : "nodes.pluralLocs"
+            }],
+
+            module : {
+
+                init: function() {
+                    var _I = this;
+
+                    _I.build();
+                    _I.update();
+
+                    _I.hub.listen( MSGS.loc_data_sorted, function( hideFlag ) {
+                        _I.hideFlag = hideFlag;
+                        _I.update();
+                    });
+                },
+
+                build : function () {
+                	var 
+                	nodes  = this.config.nodes,
+                	isNode = K.Util.isNode;
+
+                	this.render();
+
+                	_.each( nodes, function( node, key, all ){
+                		node = $( node );
+                		if ( isNode( node ) ) all[key] = node;
+                		else delete all[key];
+                	});
+                },
+
+                update : function () {
+                	var 
+                	_I   = this,
+                	lock = this.config.lockAttr;
+
+                	_.each( this.config.nodes, function( node, k, o ){
+                		if ( !node.data( lock ) && ( k in _I.render ) ) {
+                			_I.render[ k ].call( o[ k ] );
+                		}
+                	});
+                },
+
+                render : function () {
+                    var _I = this;
+
+                    _I.render = {
+
+                        absNode : function () {
+                            this.text( _I.totalLocs() ).data( _I.config.lockAttr, true );
+                        },
+
+                        relNode : function () {
+                            this.text( _I.totalShownLocs() ); 
+                        },
+
+                        pluralLocs : function () {
+                        	this.text( _I.totalShownLocs() > 1 ? "s" : "" );
+                        }
+                    };
+                    
+                },
+
+                lockNode : function ( node, bool ) {
+                    return node.data(this.config.lockAttr, bool);
+                },
+
+                totalLocs : function () {
+                    return Kernel.LOC_DATA.length;
+                },
+
+                totalShownLocs : function () {
+                	var i, l, x, hideFlag = this.hideFlag;
+
+	                i = x = 0;
+	                l = this.totalLocs();
+	                for ( ; i < l; i += 1 ) {
+	                    x += !!K.LOC_DATA[ i ][ hideFlag ] ? 0 : 1;
+	                }
+
+	                return x;
+                }
+
+            }
+
+        });
 
 		
 		//:: LIST VIEW FEATURE
         __M({
-            ns   : NS.loc_data,
+            ns   : NS.LOC_DATA,
             name : "LIST_VIEW",
-            use  : true,
+            use  : false,
 
             config : {
-                tmplNodeId : "locationList",
-                listRootNode : "#locationList",
-                loadListOnload : false
+                tmplNodeId     : "",
+                listRootNode   : "",
+                loadListOnload : false,
+                listPinsOnload : true
             },
+
+            aliases : ["locListView", {
+            	"tmplNodeId" : "tmplNodeId",
+            	"listRootNode" : "listRootNode"
+            }],
 
             module : {
 
                 init : function () {
-                    var self = this;
-
-                    self.hub.listen( MSGS.docready_loclist, function () {
-                        self.config.loadListOnload = true;
+                    var _I = this, L = _I.hub.listen;
+                    
+                    L( MSGS.docready_loclist, function ( bool ) {
+                        _I.config.loadListOnload = bool;
                     });
                     
-                    self.hub.listen( MSGS.templates_loaded, function(){
-
-                        self.template = K.TEMPLATES[ self.config.tmplNodeId ];
-                        if ( !self.template ) return;
+                    L( MSGS.templates_loaded, function(){
+                        _I.template = K.TEMPLATES[ _I.config.tmplNodeId ];
+                        if ( !_I.template ) return;
                         
-                        self.config.listRootNode = $( self.config.listRootNode );
+                        _I.config.listRootNode = $( _I.config.listRootNode );
+                        if ( !K.Util.isNode( _I.config.listRootNode ) ) return;
+                        if ( !_I.config.loadListOnload ) return;
 
-                        if ( !K.Util.isNode( self.config.listRootNode ) ) return;
-                        
-                        if ( !self.config.loadListOnload ) return;
-
-                        self.buildViews();
-                        self.render();
-
+                        _I.onloadBuild();
                     });
 
-                    self.hub.listen( MSGS.loc_data_sorted , function( hideFlag ) {
-                        self.buildViews( hideFlag );
-                        self.render();
+                    L( MSGS.loc_data_sorted , function( hideFlag ) {
+                    	_I.hideFlag = hideFlag;
+                        _I.buildViews();
+                        _I.render();
+                    });
+
+                    L( MSGS.markers_loaded, function(){
+                    	if ( _I.config.listPinsOnload && _I.config.loadListOnload ) {
+	         				_I.buildViews();
+		                    _I.render();
+		                    _I.config.listPinsOnload = !_I.config.listPinsOnload;
+	         			}
                     });
 
                 },
 
-                buildViews : function ( hideFlag ) {
+                onloadBuild : function () {
+                	if ( !this.config.listPinsOnload ) {
+                		this.buildViews();
+	                    this.render();
+	                    return;
+                	}
+                },
+
+                buildViews : function () {
                     var
-                    self = this,
-                    template  = _.template( self.template ),
-                    LOC_DATA = K.LOC_DATA,
-                    i, len;
+                    _I          = this,
+                    hideFlag    = this.hideFlag,
+                    template    = _.template( _I.template );
 
-                    self.fullListView = "";
-                    self.config.listRootNode.empty();
+                    _I.fullListView = "";
+                    _I.config.listRootNode.empty();
 
-                    i   = 0;
-                    len = LOC_DATA.length;
-                    for ( ; i < len; i += 1 ) {
-                        LOC_DATA[i].listView = template({ data : LOC_DATA[i] });
+                    _.each( K.LOC_DATA, function( o ) {
+                    	o.listView = template({ data : o });
+                    	if ( !o[ hideFlag ] ) _I.fullListView += o.listView;
+                    });
 
-                        if ( !LOC_DATA[i][ hideFlag ] ) {
-                            self.fullListView += LOC_DATA[i].listView;
-                        }
-                    }
                 },
 
                 render : function () {
                    this.config.listRootNode.append( this.fullListView );
+                   this.hub.broadcast( MSGS.loc_list_render_update, this.hideFlag );
                 }
 
             }
@@ -1469,32 +1233,38 @@
         __M({
             ns   : NS.geo,
             name : "SEARCH",
-            use  : true,
+            use  : false,
             
-            //:::::::::::::::::::::::::
             config : {
 
                 nodes : {
-                    input : ".searchInput",
-                    btn   : ".searchBtn"
+                    input : "",
+                    btn   : ""
                 },
 
-                placeholder : "Enter a search term",
-                errColor    : "red",
-                errClass    : "error"
+                placeholder : "",
+                errColor    : "",
+                errClass    : ""
 
             },
-            //:::::::::::::::::::::::::
+
+            aliases : ["userSearch", {
+            	inputNode   : "nodes.input",
+            	searchNode  : "nodes.btn",
+            	placeHolder : "placeholder",
+            	errColor    : "errColor",
+            	errClass    : "errClass" 
+
+            }],
 
             module : {
 
                 init : function () {
-                    var self = this;
-
-                    self.hub.listen( MSGS.search_model_ready, function ( config ) {
-                        $.extend( self.config, config );
-                        self.build();
-                        self.hub.listen( MSGS.user_search_response, self.triggerError);
+                    var _I = this, L = _I.hub.listen;
+                     
+                    L( MSGS.search_model_ready, function ( config ) {
+                        _I.build();
+                        L( MSGS.user_search_response, _I.triggerError);
                     });
 
                 },
@@ -1506,31 +1276,27 @@
 
                 bindEvents : function () {
                     var
-                    self   = this,
-                    nodes  = self.config.nodes,
+                    _I     = this,
                     isNode = K.Util.isNode,
-                    events = self.events,
-                    prop;
+                    events = _I.events;
 
-                    for ( prop in nodes ) {
-                        prop = trim( prop );
+                    _.each( _I.config.nodes, function( v, k, nodes ) {
+                    	k = trim( k );
 
-                        if ( !events.hasOwnProperty( prop ) ) return false;
+                    	if ( !_.has( events, k ) ) return;
 
-                        nodes[prop] = $( nodes[prop] );
+                    	nodes[ k ] = $( v );
+                    	if ( !isNode( nodes[ k ] ) ) return;
 
-                        if ( !isNode( nodes[prop] ) ) return false;
+                    	events[ k ].call( nodes[ k ], events );
+                    });
 
-                        events[prop].call( nodes[prop], events );
-                    }
-
-                    return true;
                 },
 
                 events : function () {
-                    var self     = this,
-	                    config   = self.config,
-	                    errClass = config.errClass,
+                    var _I        = this,
+	                    config      = _I.config,
+	                    errClass    = config.errClass,
 	                    placeholder = config.placeholder;
 
                     userHitEnter = function ( e ) {
@@ -1548,7 +1314,7 @@
 						node.css("color", !!add ? config.errColor : "#000" );
 					};
 
-                    self.events = {
+                    _I.events = {
                         input : function () {
 
                         	this.val( placeholder ).data("placeholder", true);
@@ -1556,10 +1322,10 @@
                             this.on({
 
                                 keyup : function ( e ) {
-                                    var $this = $(this);
-                                    if ( $this.hasClass(errClass) && !userHitEnter( e ) ) {
+                                    var $this = $( this );
+                                    if ( $this.hasClass( errClass ) && !userHitEnter( e ) ) {
                                     	$this
-										.removeClass(errClass)
+										.removeClass( errClass )
 										.val( code2Char( e.keyCode ) );
 										errCSS( $this, false );
                                     }
@@ -1567,7 +1333,7 @@
 
                                 keydown : function ( e ) {
                                 	if ( userHitEnter( e ) ) {
-                                		self.config.nodes.btn.trigger("click");
+                                		_I.config.nodes.btn.trigger("click");
 										e.preventDefault();
 										return false;
                                 	}
@@ -1582,7 +1348,7 @@
                                 },
 
                                 focusout : function () {
-                                	var $this = $(this), val = $this.val();			
+                                	var $this = $( this ), val = $this.val();			
 									if ( val.length < 1 ) $this.val( placeholder ).data("placeholder", true);
 									else $this.data("placeholder", false);
                                 },
@@ -1597,8 +1363,8 @@
                             this.on({
 
                                 click : function ( e ) {
-                                    var searchNode = self.config.nodes.input.removeClass("error");
-                                    self.userSearchRequest( trim( searchNode.val() ) );
+                                    var searchNode = _I.config.nodes.input.removeClass("error");
+                                    _I.userSearchRequest( trim( searchNode.val() ) );
                                     e.preventDefault();
                                 }
 
@@ -1606,7 +1372,7 @@
                         }
                     };
 
-                    return self;                
+                    return _I;                
                 },
 
                 userSearchRequest : function ( searchVal ) {
@@ -1625,55 +1391,49 @@
 
         //:: RADIUS MODEL
         __M({
-
             ns   : NS.geo,
             name : "RADIUS",
-            use  : ydlMapConfig.model.RADIUS,
+            use  : false,
 
             config : {
                 distanceKey : "distance",
-                hideFlag : "hide",
-                boundary : 30,
+                hideFlag    : "hide",
+                boundary    : 30,
 
                 messages : {
                     searchError : "Invalid Search Term",
-                    noResults : "No Results",
-                    placeholder : "Enter Search Term"
-                },
+                    noResults   : "No Results"
+                }, 
 
-                styles : {
-                	error : "red"
+                coordKeys : {
+                	lat : "_lat",
+                	lng : "_lng"
                 }
             },
 
+            aliases : ["radius", {
+            	distance : "boundary"
+            }],
 
             module : {
 
                 init : function () {
-                    var self = this;
+                    var _I = this, L = _I.hub.listen, B = _I.hub.broadcast;
 
-                    self.hub.broadcast( MSGS.docready_loclist );
+                    B( MSGS.docready_loclist, true );
 
-                    self.hub.listen( MSGS.gmap_dom_ready, function(){
-
-                        self.GMAP_GEOCODER = new google.maps.Geocoder();
-
-                        self.hub.broadcast( MSGS.docready_markers, true );
-
-                        self.hub.broadcast( MSGS.search_model_ready, {
-                            placeholder : self.config.messages.placeholder,
-                            errColor : self.config.styles.error
-                        });
-
-                        self.hub.listen( MSGS.user_search_request, self.geoCodeSearch); 
-
+                    L( MSGS.gmap_dom_ready, function(){
+                        _I.GMAP_GEOCODER = new google.maps.Geocoder();
+                        B( MSGS.docready_markers, true );
+                        B( MSGS.search_model_ready );
+                        L( MSGS.user_search_request, _I.geoCodeSearch);
                     });
                 },
 
                 build : function () {
                     if ( typeof K.USER_COORDS !== "object" ) return;
 
-                    this.config.boundary = parseInt(this.config.boundary, 10);
+                    this.config.boundary = parseInt( this.config.boundary, 10 );
 
                     this
                     .computeDistances()
@@ -1689,45 +1449,44 @@
                 },
 
                 geoCodeSearch : function ( userSearch ) {
-                    var self = this;
+                    var _I = this;
 
-                    self.GMAP_GEOCODER.geocode({ address : userSearch }, function( results, status ) {
+                    _I.GMAP_GEOCODER.geocode({ address : userSearch }, function( results, status ) {
 
                         if ( status != google.maps.GeocoderStatus.OK ) {
-                            self.triggerError( self.config.messages.searchError );
+                            _I.triggerError( _I.config.messages.searchError );
                             return;
                         }
 
                         geoData = results[0].geometry.location;
-                        self.doUpdate( new google.maps.LatLng(geoData.lat(), geoData.lng()) );
+                        _I.doUpdate( new google.maps.LatLng(geoData.lat(), geoData.lng()) );
                     });
                 },
 
                 checkRadius : function ( o ) {
                     var distKey = this.config.distanceKey;
-                    if ( !o[ distKey ] ) return false;
-                    return this.config.boundary < parseInt(o[ distKey ], 10);
+                    return o[ distKey ] ? this.config.boundary < parseInt(o[ distKey ], 10) : false;
                 },
 
                 flagOutOfBoundsLocs : function () {
-                    var 
-                    self = this,
-                    locData = K.LOC_DATA,
-                    i, len, currLoc;
+                    var _I = this, VIEWSTATE  = K.GMARKERS_VIEWSTATE;
+    	
+    				VIEWSTATE.clear();
+                    _I.hiddenLocs = 0;
 
-                    self.hiddenLocs = 0;
+                    _.each( K.LOC_DATA, function( o ) {
+                    	o[ _I.config.hideFlag ] = _I.checkRadius( o );
 
-                    i   = 0;
-                    len = locData.length;
-                    for ( ; i < len; i += 1 ) {
-                        currLoc = locData[i];
-                        currLoc[ self.config.hideFlag ] = self.checkRadius( currLoc );
+                    	if ( o[ _I.config.hideFlag ] ) {
+                    		_I.hiddenLocs += 1;
+                    		VIEWSTATE.hidden( o );
+                    	}
+                    	else VIEWSTATE.shown( o );
 
-                        if ( currLoc[ self.config.hideFlag ] ) self.hiddenLocs += 1;
+                    });
 
-                    }
 
-                    return self;
+                    return _I;
                 },
 
                 sortLocs : function () {
@@ -1737,46 +1496,45 @@
 
                 computeDistances : function () {
                     var
-                    self        = this,
-                    locData     = K.LOC_DATA,
-                    userCoords  = K.USER_COORDS, 
+                    _I          = this,
+                    config      = _I.config,
+                    userCoords  = K.USER_COORDS,
 
-                    i, len, currLoc, haversineObj;
+                    haversineObj,
+
+                    lat = config.coordKeys.lat,
+                    lng = config.coordKeys.lng,
 
                     haversineObj = {
-                        unit : self.config.haversineUnit,
+                        unit : _I.config.haversineUnit,
                         from : {
                             lat  : userCoords.lat(),
                             lng  : userCoords.lng()
                         }
                     };
 
-                    i   = 0;
-                    len = locData.length;
-                    for ( ; i < len; i += 1 ) {
-                        currLoc = locData[i];
+                    _.each( K.LOC_DATA, function( o ) {
 
-                        if ( !currLoc._lat || !currLoc._lng ) continue;
+                    	if ( o[ lat ] && o[ lng ] ) {
 
-                        haversineObj.to = {
-                            lat : currLoc._lat,
-                            lng : currLoc._lng
-                        };
+                    		haversineObj.to = {
+	                            lat : o[ lat ],
+	                            lng : o[ lng ]
+	                        };
 
-                        currLoc[ self.config.distanceKey ] = K.Util.haversine( haversineObj ).toFixed(2);
-                    }
+	                        o[ _I.config.distanceKey ] = K.Util.haversine( haversineObj ).toFixed(2);
+                    	}
 
-                    return self;
+                    });
+
+                    return _I;
                 },
 
                 locsFound : function () {
-                    var self = this;
-
-                    if ( self.hiddenLocs === K.LOC_DATA.length ) {
-                        self.triggerError( self.config.messages.noResults ); 
+                    if ( this.hiddenLocs === K.LOC_DATA.length ) {
+                        this.triggerError( this.config.messages.noResults ); 
                     }
-
-                    return self;
+                    return this;
                 },
 
                 triggerError : function ( msg ) {
@@ -1784,7 +1542,6 @@
                 },
 
                 complete : function () {
-
                     this.hub.broadcast( MSGS.loc_data_sorted, this.config.hideFlag );
                     return this;
                 }
@@ -1798,105 +1555,136 @@
         __M({
             ns   : NS.geo,
             name : "TERRITORY",
-            use  : ydlMapConfig.model.TERRITORY,
+            use  : false,
             
-
-            //:::::::::::::::::::::::::
             config : {
 
                 hideFlag : "hide",
 
+                redirect : {
+                	onSuccess : false,
+                	uriProp   : "_url"
+                },
+
+                codeType : {
+                	zip    : true,
+                	postal : false,
+                	custom : false
+                },
+
                 messages : {
-                    searchError : "Invalid Zip",
+                    searchError : "Invalid Zip/Postal",
                     noResults   : "No Results",
-                    placeholder : "Enter your zip"
+                    placeholder : "Enter Your Zip/Postal"
                 }
 
             },
-            //:::::::::::::::::::::::::
+
+            aliases : ["territory", {
+            	redirectOnSuccess : "redirect.onSuccess",
+            	zip : "codeType.zip",
+            	postal : "codeType.postal",
+            	custom : "codeType.custom"
+            }],
 
             module : {
 
                 init : function () {
-                    var self = this;
+                    var _I = this, L = _I.hub.listen, B = _I.hub.broadcast;
 
+                    _I.config.codeType = K.Util.hasBoolProp( _I.config.codeType, true, true );
+                    if ( !_I.config.codeType ) return;
 
-                    self.hub.listen( MSGS.gmap_dom_ready, function() {
+                    L( MSGS.gmap_dom_ready, function() {
 
-                        self.GMAP_GEOCODER = new google.maps.Geocoder();
+                        _I.GMAP_GEOCODER = new google.maps.Geocoder();
+                        B( MSGS.docready_markers, false );
+                        B( MSGS.docready_loclist, false );
 
-                        self.hub.broadcast( MSGS.docready_markers, false );
-
-                        self.hub.broadcast( MSGS.search_model_ready, {
-                            placeholder : self.config.messages.placeholder
+                        B( MSGS.search_model_ready, {
+                            placeholder : _I.config.messages.placeholder
                         });
 
-                        self.hub.listen( MSGS.user_search_request, function( userSearch ) {
-                            self.userZip = trim( userSearch );
+                        L( MSGS.user_search_request, function( userSearch ) {
 
-                            if ( !self.checkZip() ) {
-                                self.triggerError( self.config.messages.searchError );
+                        	_I.userSearch = userSearch;
+                        	_I.normalizeSearch();
+
+                            if ( !_I.validateSearch() ) {
+                                _I.triggerError( _I.config.messages.searchError );
                                 return;
                             }
 
-                            self.geoCodeSearch( self.build );
-
+                            _I.geoCodeSearch( _I.build );
                         });
-
                     });
                     
                 },
 
-                build : function () {
-                    this
-                    .checkTerritory()
-                    .locFound()
-                    .complete();
-                },                
-
-                checkTerritory : function () {
-                    var
-                    self = this,
-                    LOC_DATA = K.LOC_DATA,
-                    i, len, currLoc,
-
-                    zipMatch = function ( zipObjArr ) {
-                        var i, len;
-
-                        i   = 0;
-                        len = zipObjArr.length;
-                        for ( ; i < len; i+= 1 ) {
-                            if ( zipObjArr[i]._code == self.userZip ) return true;
-                        }
-
-                        return false;
-                    };
-
-                    self.hiddenLocs = 0;
-                    i   = 0;
-                    len = LOC_DATA.length;
-                    for ( ; i < len; i += 1 ) {
-
-                        currLoc = LOC_DATA[i];
-                        currLoc[ self.config.hideFlag ] = !zipMatch( currLoc.zip ) ? true : false;
-                        if ( currLoc[ self.config.hideFlag ] ) self.hiddenLocs += 1;
-
-                    }
-
-                    return self;
+                normalizeSearch : function () {
+                	this.userSearch = trim( this.userSearch ).toUpperCase();
                 },
 
-                checkZip : function () {
-                    return K.Util.checkZip( this.userZip );
+                build : function () {
+                    this.checkTerritory();
+
+                    if ( this.locFound() ) {
+                    	this
+                    	.sort()
+                   		.complete();
+                    }
+                    
+                },
+
+                checkTerritory : function () {
+                	var 
+                	_I         = this,
+                	codeArrKey = _I.config.codeType,
+                	VIEWSTATE  = K.GMARKERS_VIEWSTATE,
+                	foundLoc, foundLocIdx = -1;
+
+                	VIEWSTATE.clear();
+
+                	foundLoc = _.find( K.LOC_DATA, function( loc, i ){
+                		foundLocIdx = i;
+                		return _I.codeMatch( loc[ codeArrKey ] );
+                	});
+
+
+                	_.each( K.LOC_DATA, function( loc, i ) {
+
+                		if ( foundLoc && i === foundLocIdx ) {
+                			loc[ _I.config.hideFlag ] = false;
+                			VIEWSTATE.shown( loc );
+                		} 
+                		else {
+                			loc[ _I.config.hideFlag ] = true;
+                			VIEWSTATE.hidden( loc );
+                		}
+
+                	});
+
+                	return _I;
+                },             	 
+
+                codeMatch : function ( zipObjArr ) {
+                	var _I = this;
+                	return _.find( zipObjArr, function( v ){
+                		return v._code === _I.userSearch || v === _I.userSearch;
+                	});
+                },
+
+                validateSearch : function () {
+                    return this.config.codeType !== "custom" ? K.Util.validate( this.userSearch, this.config.codeType ) : true;
                 },
 
                 geoCodeSearch : function ( cb ) {
-                    var self = this;
+                    var _I = this;
 
-                    self.GMAP_GEOCODER.geocode({ address : self.userZip }, function( results, status ) {
+                    _I.GMAP_GEOCODER.geocode({ address : _I.userSearch }, function( results, status ) {
 
                         if ( status != google.maps.GeocoderStatus.OK ) {
-                            self.triggerError( self.config.messages.searchError );
+                            _I.triggerError( _I.config.messages.searchError );
                             return;
                         }
 
@@ -1908,13 +1696,31 @@
                 },
 
                 locFound : function () {
-                    var self = this;
-
-                    if ( self.hiddenLocs === K.LOC_DATA.length ) {
-                        self.triggerError( self.config.messages.noResults ); 
+                    if ( K.GMARKERS_VIEWSTATE.report().hidden.length === K.LOC_DATA.length ) {
+                        this.triggerError( this.config.messages.noResults );
+                        return false; 
                     }
 
-                    return self;
+                    return true;
+                },
+
+                sort : function () {
+                	var 
+                	report = K.GMARKERS_VIEWSTATE.report(),
+                	locs   = [];
+                	if ( report.shown.length > 0 ) {
+
+                		_.each( report.shown, function ( loc ) {
+                			locs.push( loc );
+                		});
+
+                		_.each( report.hidden, function ( loc ) {
+                			locs.push( loc );
+                		});
+                	}
+
+                	K.LOC_DATA = locs;
+                	return this;
                 },
 
                 triggerError : function ( msg ) {
@@ -1922,8 +1728,21 @@
                 },
 
                 complete : function () {
+
+                	if ( !!this.config.redirect.onSuccess ) {
+                		this.redirect();
+                		return;
+                	}
+
                     this.hub.broadcast( MSGS.loc_data_sorted, this.config.hideFlag );
                     return this;
+                },
+
+                redirect : function () {
+                	var 
+                	targetLoc = K.GMARKERS_VIEWSTATE.report().shown[0],
+                	uriProp   = this.config.redirect.uriProp;
+                	if ( uriProp in targetLoc ) window.location = targetLoc[ uriProp ];
                 }
 
             }
@@ -1938,36 +1757,36 @@
         __M({
             ns   : NS.gmaps,
             name : "CANVAS",
-            use  : true,
+            use  : false,
             
-            //:::::::::::::::::::::::::
             config : {
-                mapNode : ".mapCanvas"
+                mapNode : ""
             },
-            //:::::::::::::::::::::::::
 
+            aliases : ["mapCanvas", {
+            	mapNode : "mapNode"
+            }],
 
             module : {
                 
                 init : function () {
-                    var self = this;
+                    var _I = this;
 
-                    self.hub.listen( MSGS.gmap_config_ready, function( config ){
-                        self.build( config );
-                        self.hub.broadcast( MSGS.gmap_dom_ready, K.GMAP);
+                    _I.hub.listen( MSGS.gmap_config_ready, function( config ){
+                        _I.build( config );
+                        _I.hub.broadcast( MSGS.gmap_dom_ready, K.GMAP);
                     });
                     
                 },
 
                 build : function ( config ) {
-                    var node;
+                    var node = $( this.config.mapNode );
 
-                    node = $( this.config.mapNode );
-                    if ( !K.Util.isNode( node ) ) return false;
-
-                    this.config.mapNode = node[0];
-                    this.mapConfig      = config; 
-                    this.loadMap();
+                    if ( K.Util.isNode( node ) ) {
+                    	this.config.mapNode = node[0];
+	                    this.mapConfig      = config; 
+	                    this.loadMap();
+                    }
                 },
 
                 loadMap : function () {
@@ -1985,45 +1804,43 @@
             name : "CONFIG",
             use  : true,
             
-
-            //:::::::::::::::::::::::::
             config : {
-                mapTypeId : "ROADMAP",
+                mapTypeId : "",
                 center : {
-                    lat : window.ydlMapConfig.lat,
-                    lng : window.ydlMapConfig.lng
+                    lat : 0,
+                    lng : 0
                 },
-                zoom  : window.ydlMapConfig.zoom || 8
+                zoom  : 10
             },
-            //:::::::::::::::::::::::::
+
+            aliases : ["mapConfig", {
+            	mapType : "mapTypeId",
+            	lat : "center.lat",
+            	lng : "center.lng",
+            	zoom : "zoom"
+            }],
 
             module : {
 
                 init : function () {
-                    var self = this;
+                    var _I = this;
 
-                    self.hub.listen( MSGS.gmap_api_loaded, function () {
-                        self.build();
-                        self.hub.broadcast( MSGS.gmap_config_ready, self.config );
+                    _I.hub.listen( MSGS.gmap_api_loaded, function () {
+                        _I.build();
+                        _I.hub.broadcast( MSGS.gmap_config_ready, _I.config );
                     });
                 },
 
                 build : function () {
-                    var 
-                    config = {},
-                    prop;
+                	var buildConfig = this.buildConfig;
 
-                    for ( prop in this.config ) {
-                        if ( this.buildSettings.hasOwnProperty( prop ) ) {
-                            config[prop] = this.buildSettings[prop]( this.config[prop] );
-                        }
-                        else config[prop] = this.config[prop];
-                    }
+                	_.each( this.config, function( v, k, o ){
+                		if ( buildConfig[ k ] ) o[ k ] = buildConfig[ k ]( v );
+                	});
 
-                    this.config = config;
                 },
 
-                buildSettings : {
+                buildConfig : {
 
                     center : function ( coords ) {
                         return coords ? new google.maps.LatLng(coords.lat, coords.lng) : undefined;
@@ -2045,7 +1862,6 @@
             name : "API",
             use  : true,
             
-            //:::::::::::::::::::::::::
             config : {
                 file : "https://maps.googleapis.com/maps/api/js",
                 params : {
@@ -2053,7 +1869,6 @@
                     callback : "gmapscb"
                 }
             },
-            //:::::::::::::::::::::::::
 
             module : {
 
@@ -2064,7 +1879,6 @@
 
                 load : function () {
                     var file = K.Util.add_QS_Params( this.config.file, this.config.params );
-
                     K.Util.loadScript( file );
                 },
 
@@ -2079,59 +1893,53 @@
         //::::::::::::::::::::::::::::::::::::::::
         //:::::::::::: Templates Module
 
-
-        //:: API LOADER
+        //:: TEMPLATE LOADER
         __M({
             ns   : NS.templates,
-            name : "LOAD",
-            use  : true,
+            name : "TMPL",
+            use  : false,
 
-            //:::::::::::::::::::::::::
             config : {
-                file : "templates.html"
+                file : ""
             },
-            //:::::::::::::::::::::::::
+
+            aliases : ["templates", {
+            	file : "file"
+            }],
 
             module : {
 
                 init : function () {
-                    this.load();
-                },
-
-                load : function () {
-                    var self = this;
-
                     K.Util.ajax({
-                    	type : "GET",
-                        url : trim( self.config.file ),
-                        success : self.prepare
+                    	type    : "GET",
+                        url     : trim( this.config.file ),
+                        success : this.prepare
                     });
                 },
 
                 prepare : function ( tmplHTML ) {
-                    var self = this;
-
-                    $("<div />")
+                    $("<tmpl />")
                     .append( tmplHTML )
                     .find("script")
                     .each(function(){
                         var 
-                        $this   = $(this),
-                        tmplId  = trim( $this.attr("id") ),
-                        tmplTxt = trim( $this.html() );
-
+                        $this   = $(this)[0],
+                        tmplId  = trim( $this.id ),
+                        tmplTxt = trim( $this.innerHTML );
                         K.TEMPLATES[ tmplId ] = tmplTxt.replace(/\>[\r\n|\n|\n\t ]+\</g, "><");
                     });
 
-                    self.hub.broadcast( MSGS.templates_loaded );
+                    this.hub.broadcast( MSGS.templates_loaded );
                 }
             }
         });
 
+		
     }());
+	// - / METRO APP -
 
 
-    //  _INIT
-    $( K.Builder.start );
+	// INIT
+	window.YDLMAPS = K.Builder.start;
 
 }( jQuery, window ));
