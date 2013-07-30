@@ -34,90 +34,78 @@
 <script type="text/javascript" src="YDL_MAPS.js"></script>
 
 <script>
-	//example instance
-	YDLMAPS({
-	    use : [
-	        "RADIUS", // (required), options -> RADIUS or TERRITORY
-	        "INFO_WINDOWS",
-	        "TOTAL_LOCS",
-	        "LIST_VIEW",
-	        "SEARCH",
-	        "CANVAS",
-	        "TMPL"
-	    ],
-	   
-	    config : {
-	    
-	        "mapCanvas" : {
-	            mapNode : ".mapCanvas"
-	        },
-	        
-	        "mapConfig" : {
-	            mapType : "SATELLITE",
-	            lat     : 0,
-	            lng     : 0,
-	            zoom    : 8
-	        },
+//example instance
+YDLMAPS({
+	use : [
+		"TERRITORY", // (required), options -> RADIUS or TERRITORY
+		"INFO_WINDOWS",
+		"TOTAL_LOCS",
+		"LIST_VIEW",
+		"SEARCH",
+		"CANVAS",
+		"TMPL"
+	],
+	config : {
+		"mapCanvas" : {
+			mapNode : ".mapCanvas"
+		},
+		"mapConfig" : {
+			mapType : "ROADMAP",
+			lat     : 48.438376,
+			lng     : -123.415711,
+			zoom    : 8
+		},
+		"radius" : {
+			distance : 30 // miles
+			},
+		"territory" : {
+			redirectOnSuccess : true,
+			zip : false,
+	       	postal : true,
+	       	FSA_Postal : true
+		},
+		"locData" : {
+			file : "locations.xml"
+		},
+		"locListView" : {
+			tmplNodeId   : "locationList",
+			listRootNode : "#locationList"
+		},
+		"userSearch" : {
+			inputNode   : ".searchInput",
+			searchNode  : ".searchBtn",
+			placeHolder : "Enter Postal Code",
+			errColor    : "#FF0000",
+			errClass    : "error"
+		},
+		"infoWindows" : {
+			tmplNodeId : "infoWindows",
+			mouseEvent : "click"
+		},
+		"markerStyles" : {
+			userType   : "hex", // hex or img
+			userHexBG  : "666666",
+			userImgSrc : "",
+			locsType   : "hex",
+			locsHexBG  : "FF7B0D",
+			locsHexTxt : "FFFFFF",
+			locsImgSrc : "",
+			locsSortAlpha : false,
+			locsSortNum   : true
+		},
+		"locCounter" : {
+			absNode : ".totalLocs_abs",
+			relNode : ".totalLocs_rel",
+			pluralLocs: ".totalLocs_tense"
+		},
+		"templates" : {
+			file : "templates.html"
+		}
+	}
+});
 
-	        radius : {
-	        	distance : 30 // miles
-	        },
 
-	        territory : {
-	        	redirectOnSuccess : false,
-	        	zip    : false,
-	        	postal : true
-	        },
-	        
-	        "locData" : {
-	            file : "rad.xml"
-	        },
-	        
-	        "locListView" : {
-	            tmplNodeId   : "locationList",
-	            listRootNode : "#locationList"
-	        },
-	        
-	        "userSearch" : {
-	            inputNode   : ".searchInput",
-	            searchNode  : ".searchBtn",
-	            placeHolder : "Search it up!",
-	            errColor    : "#666",
-	            errClass    : "error"
-	        },
-	        
-	        "infoWindows" : {
-	            tmplNodeId : "infoWindows",
-	            mouseEvent : "click"
-	        },
-	        
-	        "markerStyles" : {
-	            userType   : "hex", // hex or img
-	            userHexBG  : "666666",
-	            userImgSrc : "",
-	            
-	            locsType   : "img",
-	            locsHexBG  : "D96666",
-	            locsHexTxt : "FFFFFF",
-	            locsImgSrc : "icons/lowerletters/letter_{a}.png",
 
-	            locSortImg    : true,
-	            locsSortAlpha : false,
-	            locsSortNum   : false
-
-	        },
-	        
-	        "locCounter" : {
-	            absNode : ".totalLocs_abs",
-	            relNode : ".totalLocs_rel",
-	            pluralLocs : ".pluralLocs"
-	        },
-	        
-	        "templates" : {
-	            file : "templates.html"
-	        }
-	    }
-	});
 
 
 </script>

@@ -516,6 +516,7 @@
                     if ( this.config.file ) {
                     	K.LOC_DATA = K.Util.xml2json( this.config.file ).json;
 	                    K.mapModel();
+
                     }
                 }
 
@@ -550,10 +551,15 @@
                     lat    = config.lat, 
                     lng    = config.lng;
 
+
+                    if ( !K.LOC_DATA.length ) K.LOC_DATA = [K.LOC_DATA];
+
                     _.each( K.LOC_DATA, function( o ) {
-                    	if ( o[lng] && o[lng] ) {
+
+                    	if ( o[lat] && o[lng] ) {
                     		o.GLatLng = new google.maps.LatLng( o[lat], o[lng] );
                     	}
+
                     });
                 }
             }
@@ -572,8 +578,15 @@
         	module : {
 
         		init : function () {
-        			this.hub.listen( MSGS.markers_loaded, this.updateZoom );
-        			this.hub.listen( MSGS.loc_data_sorted, this.updateZoom );
+        			var that = this;
+
+        			this.hub.listen( MSGS.markers_loaded, function(){
+        				that.updateZoom();
+        			});
+
+        			this.hub.listen( MSGS.loc_data_sorted, function(){
+        				that.updateZoom(); 
+        			});
         		},
 
         		updateZoom : function ( hideFlag ) {
@@ -582,6 +595,9 @@
         			report = K.GMARKERS_VIEWSTATE.report();
 
         			if ( K.LOC_DATA.length < 2 ) {
+
+        				console.log("test");
+
         				K.GMAP.setCenter( K.LOC_DATA[0].marker.getPosition() );
         				return;
         			}
@@ -594,12 +610,16 @@
         			bounds = new google.maps.LatLngBounds();
 
         			_.each( K.LOC_DATA, function( o ) {
-        				if ( !o[ hideFlag ] ) {
-        					bounds.extend( o.marker.getPosition() );
+
+        				var position = o.marker ? o.marker.getPosition() : false;
+
+        				if ( !o[ hideFlag ] && position ) {
+        					bounds.extend( position );
         				}
+        				else bounds = null;
         			});
 
-        			K.GMAP.fitBounds( bounds );	
+        			!!bounds && K.GMAP.fitBounds( bounds );
         		}
 
         	}
@@ -957,6 +977,8 @@
                		_I      = this, 
                		markerKey = this.config.markerKey;
 
+               		if ( !K.LOC_DATA.length ) K.LOC_DATA = [ K.LOC_DATA ];
+
                		_.each( K.LOC_DATA, function( o ) {
                			o[ markerKey ] = _I.makeGMarker( o );
                			if ( !_I.onloadMarkers ) o[ markerKey ].setMap( null );
@@ -964,6 +986,7 @@
                 },
 
                 makeGMarker : function ( o ) {
+
                 	return new google.maps.Marker({
                 		map       : K.GMAP,
                 		position  : o.GLatLng || o.position,
@@ -973,7 +996,7 @@
 
             	updateMarkers : function () {
                     var
-                    _I      = this, 
+                    _I      = this,
                     markerKey = this.config.markerKey,
                     hideFlag  = trim( _I.hideFlag );
 
@@ -1570,6 +1593,10 @@
                     searchError : "Invalid Zip/Postal",
                     noResults   : "No Results",
                     placeholder : "Enter Your Zip/Postal"
+                },
+
+                magic : {
+                	FSA_Postal : false
                 }
 
             },
@@ -1578,7 +1605,8 @@
             	redirectOnSuccess : "redirect.onSuccess",
             	zip : "codeType.zip",
             	postal : "codeType.postal",
-            	custom : "codeType.custom"
+            	custom : "codeType.custom",
+            	FSA_Postal : "magic.FSA_Postal"
             }],
 
             module : {
@@ -1607,6 +1635,10 @@
                             if ( !_I.validateSearch() ) {
                                 _I.triggerError( _I.config.messages.searchError );
                                 return;
+                            }
+
+                            if ( _I.config.magic = K.Util.hasBoolProp( _I.config.magic, true, true ) ) {
+                            	_I.magic[ _I.config.magic ].call( _I );
                             }
 
                             _I.geoCodeSearch( _I.build );
@@ -1715,6 +1747,12 @@
 
                 	K.LOC_DATA = locs;
                 	return this;
+                },
+
+                magic : {
+                	FSA_Postal : function () {
+                		this.userSearch = this.userSearch.substr(0, 3);
+                	}
                 },
 
                 triggerError : function ( msg ) {
