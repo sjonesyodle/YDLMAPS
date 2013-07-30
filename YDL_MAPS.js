@@ -590,6 +590,8 @@
         				K.GMAP.setCenter( report.shown[0].marker.getPosition() );
         				return;
         			}
+
+        			if ( report.shown.length < 1  ) return;
         			
         			bounds = new google.maps.LatLngBounds();
 
