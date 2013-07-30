@@ -618,12 +618,17 @@
         				return;
         			}
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         			if ( report.shown.length < 1 ) {
         				return;
         			}
 
 >>>>>>> b1434527ee48b9b846e1edba41b66716e18af8a1
+=======
+
+        			if ( report.shown.length < 1  ) return;
+>>>>>>> rollback
         			
         			bounds = new google.maps.LatLngBounds();
 
