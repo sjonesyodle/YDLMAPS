@@ -1,5 +1,3 @@
-// 01
-
 ;(function( $, window, undefined ){
 
     var
@@ -416,7 +414,6 @@
                 return;
             }
         },
-<<<<<<< HEAD
 
     	LOC_DATA    : { },
         USER_COORDS : { },
@@ -439,30 +436,6 @@
         			shown.push( o );
         		},
 
-=======
-
-    	LOC_DATA    : { },
-        USER_COORDS : { },
-        TEMPLATES   : { },
-        GMAP        : { },
-
-        GMARKERS_VIEWSTATE : (function () {
-        	var
-        	shown  = [],
-        	hidden = [];
-
-        	return {
-
-        		clear : function () {
-        			shown  = [];
-        			hidden = [];
-        		},
-
-        		shown : function ( o ) {
-        			shown.push( o );
-        		},
-
->>>>>>> b1434527ee48b9b846e1edba41b66716e18af8a1
         		hidden : function ( o ) {
         			hidden.push( o );
         		},
@@ -617,18 +590,6 @@
         				K.GMAP.setCenter( report.shown[0].marker.getPosition() );
         				return;
         			}
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-        			if ( report.shown.length < 1 ) {
-        				return;
-        			}
-
->>>>>>> b1434527ee48b9b846e1edba41b66716e18af8a1
-=======
-
-        			if ( report.shown.length < 1  ) return;
->>>>>>> rollback
         			
         			bounds = new google.maps.LatLngBounds();
 
@@ -666,15 +627,9 @@
 
                 init : function () {
                     var _I = this;
-<<<<<<< HEAD
 
                     _I.hub.listen( MSGS.markers_loaded, function () {
 
-=======
-
-                    _I.hub.listen( MSGS.markers_loaded, function () {
-
->>>>>>> b1434527ee48b9b846e1edba41b66716e18af8a1
                         _I.GMAPInfoWindow = new google.maps.InfoWindow();
                         _I.template       = K.TEMPLATES[ trim(_I.config.tmplNodeId) ];
 
